@@ -1,0 +1,17 @@
+node_modules
+dist
+
+.env
+.env.*
+!.env.example
+
+# Prisma
+packages/shared/prisma/migrations
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db

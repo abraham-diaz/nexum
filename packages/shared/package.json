@@ -17,6 +17,8 @@
     "@prisma/client": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "^25.3.0",
+    "dotenv": "^17.3.1",
     "prisma": "catalog:"
   }
 }

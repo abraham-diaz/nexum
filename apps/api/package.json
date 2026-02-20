@@ -1,5 +1,5 @@
 {
-  "name": "nexum-api",
+  "name": "@nexum/api",
   "private": true,
   "type": "module",
   "scripts": {

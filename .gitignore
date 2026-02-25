@@ -8,6 +8,9 @@ dist
 # Prisma
 packages/shared/prisma/migrations
 
+# Vite temp files
+*.timestamp-*.mjs
+
 # IDE
 .vscode
 .idea

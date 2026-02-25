@@ -128,9 +128,9 @@ export default function DatabaseView() {
         <p className="text-destructive">
           {dbError?.message ?? "Database not found."}
         </p>
-        <Button variant="outline" onClick={() => navigate("/")}>
+        <Button variant="outline" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
+          Go back
         </Button>
       </div>
     );
@@ -143,7 +143,7 @@ export default function DatabaseView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">{database.name}</h1>

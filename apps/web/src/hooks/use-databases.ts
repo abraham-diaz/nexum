@@ -13,8 +13,12 @@ export function useDatabases() {
 export function useCreateDatabase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => api.createDatabase(name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: DATABASES_KEY }),
+    mutationFn: ({ name, projectId }: { name: string; projectId: string }) =>
+      api.createDatabase(name, projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DATABASES_KEY });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }
 
@@ -23,7 +27,10 @@ export function useUpdateDatabase() {
   return useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       api.updateDatabase(id, name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: DATABASES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DATABASES_KEY });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }
 
@@ -31,6 +38,9 @@ export function useDeleteDatabase() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deleteDatabase(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: DATABASES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DATABASES_KEY });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }

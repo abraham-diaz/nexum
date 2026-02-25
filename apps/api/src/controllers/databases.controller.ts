@@ -1,8 +1,9 @@
 import type { RequestHandler } from 'express';
 import * as databasesService from '../services/databases.service.js';
 
-export const list: RequestHandler = async (_req, res) => {
-  const databases = await databasesService.findAll();
+export const list: RequestHandler = async (req, res) => {
+  const projectId = req.query.projectId as string | undefined;
+  const databases = await databasesService.findAll(projectId);
   res.json(databases);
 };
 
@@ -13,7 +14,7 @@ export const getById: RequestHandler = async (req, res) => {
 };
 
 export const create: RequestHandler = async (req, res) => {
-  const db = await databasesService.create(req.body.name);
+  const db = await databasesService.create(req.body.name, req.body.projectId);
   res.status(201).json(db);
 };
 

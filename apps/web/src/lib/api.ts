@@ -15,9 +15,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { databases: number; children: number };
+}
+
+export interface ProjectDetail extends Omit<Project, "_count"> {
+  children: Project[];
+  databases: Database[];
+  parent: { id: string; name: string; parentId: string | null } | null;
+}
+
 export interface Database {
   id: string;
   name: string;
+  projectId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,14 +71,45 @@ export interface DatabaseDetail extends Database {
   _count: { rows: number };
 }
 
+// --- Projects ---
+
+export function getProjects(parentId?: string) {
+  const query = parentId ? `?parentId=${parentId}` : "";
+  return request<Project[]>(`/projects${query}`);
+}
+
+export function getProject(id: string) {
+  return request<ProjectDetail>(`/projects/${id}`);
+}
+
+export function createProject(name: string, parentId?: string) {
+  return request<Project>("/projects", {
+    method: "POST",
+    body: JSON.stringify({ name, parentId }),
+  });
+}
+
+export function updateProject(id: string, name: string) {
+  return request<Project>(`/projects/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteProject(id: string) {
+  return request<void>(`/projects/${id}`, { method: "DELETE" });
+}
+
+// --- Databases ---
+
 export function getDatabases() {
   return request<Database[]>("/databases");
 }
 
-export function createDatabase(name: string) {
+export function createDatabase(name: string, projectId: string) {
   return request<Database>("/databases", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, projectId }),
   });
 }
 

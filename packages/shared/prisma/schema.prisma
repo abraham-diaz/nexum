@@ -5,3 +5,72 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Database {
+  id         String     @id @default(cuid())
+  name       String
+  properties Property[]
+  rows       Row[]
+
+  // Databases que apuntan a este via RELATION
+  referencedBy Property[] @relation("RelationTarget")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Property {
+  id         String       @id @default(cuid())
+  name       String
+  type       PropertyType
+  order      Int          @default(0)
+  config     Json?        // Opciones de SELECT, formato de NUMBER, etc.
+
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  // Solo si type es RELATION
+  relationDatabaseId String?
+  relationDatabase   Database? @relation("RelationTarget", fields: [relationDatabaseId], references: [id], onDelete: SetNull)
+
+  cells Cell[]
+
+  createdAt DateTime @default(now())
+
+  @@index([databaseId, order])
+}
+
+model Row {
+  id         String @id @default(cuid())
+  order      Int    @default(0)
+
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  cells Cell[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([databaseId, order])
+}
+
+model Cell {
+  id         String @id @default(cuid())
+  value      Json?
+
+  rowId      String
+  row        Row @relation(fields: [rowId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([rowId, propertyId])
+}
+
+enum PropertyType {
+  TEXT
+  NUMBER
+  SELECT
+  RELATION
+}

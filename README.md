@@ -7,10 +7,14 @@ Monorepo project created with devstarter-cli.
 ```
 nexum/
 ├─ apps/
-│  ├─ web/        ← frontend
-│  └─ api/        ← backend
+│  ├─ web/                ← React + Vite frontend
+│  └─ api/                ← Express backend
+│     └─ src/
+│        ├─ routes/       ← HTTP route definitions
+│        ├─ controllers/  ← Request/response handling
+│        └─ services/     ← Business logic + Prisma queries
 ├─ packages/
-│  └─ shared/     ← shared code
+│  └─ shared/             ← Shared types, schemas, Prisma models
 ├─ package.json
 ├─ pnpm-workspace.yaml
 └─ tsconfig.base.json

@@ -8,6 +8,9 @@ dist
 # Prisma
 packages/shared/prisma/migrations
 
+# Vite temp files
+*.timestamp-*.mjs
+
 # IDE
 .vscode
 .idea
@@ -15,3 +18,7 @@ packages/shared/prisma/migrations
 # OS
 .DS_Store
 Thumbs.db
+
+# CLAUDE
+CLAUDE.md
+settings.local.json

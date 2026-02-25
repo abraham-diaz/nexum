@@ -27,11 +27,6 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-5 pb-4 overflow-hidden whitespace-nowrap">
-        <span className="text-lg font-semibold text-white tracking-tight">
-          Nexum
-        </span>
-      </div>
 
       <nav className="flex-1 flex flex-col gap-1 px-2">
         {navItems.map(({ to, icon: Icon, label }) => (

@@ -5,7 +5,7 @@ export function findAll(parentId?: string | null) {
     where: { parentId: parentId ?? null },
     orderBy: { updatedAt: 'desc' },
     include: {
-      _count: { select: { databases: true, children: true } },
+      _count: { select: { databases: true, children: true, documents: true } },
     },
   });
 }
@@ -16,9 +16,10 @@ export function findById(id: string) {
     include: {
       children: {
         orderBy: { updatedAt: 'desc' },
-        include: { _count: { select: { databases: true, children: true } } },
+        include: { _count: { select: { databases: true, children: true, documents: true } } },
       },
       databases: { orderBy: { createdAt: 'desc' } },
+      documents: { orderBy: { createdAt: 'desc' } },
       parent: { select: { id: true, name: true, parentId: true } },
     },
   });

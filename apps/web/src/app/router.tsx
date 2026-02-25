@@ -4,6 +4,7 @@ import Dashboard from "@/pages/Dashboard";
 import Projects from "@/pages/Projects";
 import ProjectView from "@/pages/ProjectView";
 import DatabaseView from "@/pages/DatabaseView";
+import DocumentView from "@/pages/DocumentView";
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: "databases/:id",
         element: <DatabaseView />,
+      },
+      {
+        path: "documents/:id",
+        element: <DocumentView />,
       },
     ],
   },

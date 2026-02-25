@@ -14,7 +14,8 @@ model Project {
   parent    Project?   @relation("ProjectTree", fields: [parentId], references: [id], onDelete: Cascade)
   children  Project[]  @relation("ProjectTree")
 
-  databases Database[]
+  databases  Database[]
+  documents  Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,6 +84,16 @@ model Cell {
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([rowId, propertyId])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  content   Json?
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum PropertyType {

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   FolderKanban,
   Database,
+  FileText,
   Loader2,
   ArrowRight,
 } from "lucide-react";
@@ -14,13 +15,15 @@ import {
 } from "@/components/ui/card";
 import { useProjects } from "@/hooks/use-projects";
 import { useDatabases } from "@/hooks/use-databases";
+import { useDocuments } from "@/hooks/use-documents";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data: projects, isLoading: loadingProjects } = useProjects();
   const { data: databases, isLoading: loadingDatabases } = useDatabases();
+  const { data: documents, isLoading: loadingDocuments } = useDocuments();
 
-  const isLoading = loadingProjects || loadingDatabases;
+  const isLoading = loadingProjects || loadingDatabases || loadingDocuments;
 
   if (isLoading) {
     return (
@@ -53,6 +56,15 @@ export default function Dashboard() {
             <CardTitle className="text-3xl flex items-center gap-3">
               <Database className="h-6 w-6 text-muted-foreground" />
               {databases?.length ?? 0}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Total Documents</CardDescription>
+            <CardTitle className="text-3xl flex items-center gap-3">
+              <FileText className="h-6 w-6 text-muted-foreground" />
+              {documents?.length ?? 0}
             </CardTitle>
           </CardHeader>
         </Card>

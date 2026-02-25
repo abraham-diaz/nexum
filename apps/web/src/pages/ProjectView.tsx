@@ -6,6 +6,7 @@ import {
   Trash2,
   Database,
   FolderKanban,
+  FileText,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
@@ -38,7 +39,12 @@ import {
   useUpdateDatabase,
   useDeleteDatabase,
 } from "@/hooks/use-databases";
-import type { Project, Database as DatabaseType } from "@/lib/api";
+import {
+  useCreateDocument,
+  useUpdateDocument,
+  useDeleteDocument,
+} from "@/hooks/use-documents";
+import type { Project, Database as DatabaseType, Document } from "@/lib/api";
 
 function NameFormDialog({
   open,
@@ -152,6 +158,11 @@ export default function ProjectView() {
   const updateDbMutation = useUpdateDatabase();
   const deleteDbMutation = useDeleteDatabase();
 
+  // Document mutations
+  const createDocMutation = useCreateDocument();
+  const updateDocMutation = useUpdateDocument();
+  const deleteDocMutation = useDeleteDocument();
+
   // Sub-project dialog state
   const [createSubOpen, setCreateSubOpen] = useState(false);
   const [editSubTarget, setEditSubTarget] = useState<Project | null>(null);
@@ -163,6 +174,11 @@ export default function ProjectView() {
   const [deleteDbTarget, setDeleteDbTarget] = useState<DatabaseType | null>(
     null
   );
+
+  // Document dialog state
+  const [createDocOpen, setCreateDocOpen] = useState(false);
+  const [editDocTarget, setEditDocTarget] = useState<Document | null>(null);
+  const [deleteDocTarget, setDeleteDocTarget] = useState<Document | null>(null);
 
   if (isLoading) {
     return (
@@ -184,9 +200,11 @@ export default function ProjectView() {
 
   const children = project.children ?? [];
   const databases = project.databases ?? [];
+  const documents = project.documents ?? [];
   const hasChildren = children.length > 0;
   const hasDatabases = databases.length > 0;
-  const isEmpty = !hasChildren && !hasDatabases;
+  const hasDocuments = documents.length > 0;
+  const isEmpty = !hasChildren && !hasDatabases && !hasDocuments;
 
   // Nivel 1: sin padre, Nivel 2: padre sin abuelo, Nivel 3: padre con abuelo
   const isMaxDepth = !!project.parent?.parentId;
@@ -213,6 +231,10 @@ export default function ProjectView() {
             <Plus className="mr-2 h-4 w-4" />
             Database
           </Button>
+          <Button variant="outline" onClick={() => setCreateDocOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Document
+          </Button>
         </div>
       </div>
 
@@ -236,6 +258,10 @@ export default function ProjectView() {
             <Button onClick={() => setCreateDbOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Database
+            </Button>
+            <Button variant="outline" onClick={() => setCreateDocOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Document
             </Button>
           </div>
         </div>
@@ -343,6 +369,60 @@ export default function ProjectView() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteDbTarget(db)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardAction>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documents */}
+      {hasDocuments && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Documents
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {documents.map((doc) => (
+              <Card
+                key={doc.id}
+                className="group cursor-pointer transition-colors hover:border-foreground/20"
+                onClick={() => navigate(`/documents/${doc.id}`)}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    {doc.title}
+                  </CardTitle>
+                  <CardDescription>
+                    Created{" "}
+                    {new Date(doc.createdAt).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </CardDescription>
+                  <CardAction>
+                    <div
+                      className="flex gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditDocTarget(doc)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteDocTarget(doc)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -463,6 +543,61 @@ export default function ProjectView() {
           });
         }}
         isPending={deleteDbMutation.isPending}
+      />
+
+      {/* --- Dialogs: Documents --- */}
+      <NameFormDialog
+        open={createDocOpen}
+        onOpenChange={(open) => {
+          setCreateDocOpen(open);
+          if (!open) createDocMutation.reset();
+        }}
+        title="Create document"
+        description="Give your new document a title."
+        placeholder="Document title"
+        onSubmit={(name) => {
+          createDocMutation.mutate(
+            { title: name, projectId: id! },
+            { onSuccess: () => setCreateDocOpen(false) }
+          );
+        }}
+        isPending={createDocMutation.isPending}
+      />
+
+      <NameFormDialog
+        key={`edit-doc-${editDocTarget?.id}`}
+        open={!!editDocTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditDocTarget(null);
+        }}
+        title="Rename document"
+        description="Enter a new title for this document."
+        placeholder="Document title"
+        initialName={editDocTarget?.title}
+        onSubmit={(name) => {
+          if (!editDocTarget) return;
+          updateDocMutation.mutate(
+            { id: editDocTarget.id, data: { title: name } },
+            { onSuccess: () => setEditDocTarget(null) }
+          );
+        }}
+        isPending={updateDocMutation.isPending}
+      />
+
+      <DeleteConfirmDialog
+        open={!!deleteDocTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteDocTarget(null);
+        }}
+        label="document"
+        message={`Are you sure you want to delete "${deleteDocTarget?.title}"? This action cannot be undone.`}
+        onConfirm={() => {
+          if (!deleteDocTarget) return;
+          deleteDocMutation.mutate(deleteDocTarget.id, {
+            onSuccess: () => setDeleteDocTarget(null),
+          });
+        }}
+        isPending={deleteDocMutation.isPending}
       />
     </div>
   );

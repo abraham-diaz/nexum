@@ -21,12 +21,13 @@ export interface Project {
   parentId: string | null;
   createdAt: string;
   updatedAt: string;
-  _count?: { databases: number; children: number };
+  _count?: { databases: number; children: number; documents: number };
 }
 
 export interface ProjectDetail extends Omit<Project, "_count"> {
   children: Project[];
   databases: Database[];
+  documents: Document[];
   parent: { id: string; name: string; parentId: string | null } | null;
 }
 
@@ -62,6 +63,15 @@ export interface Row {
   order: number;
   databaseId: string;
   cells: Cell[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Document {
+  id: string;
+  title: string;
+  content: unknown;
+  projectId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -163,4 +173,35 @@ export function upsertCell(rowId: string, propertyId: string, value: unknown) {
     method: "PUT",
     body: JSON.stringify({ value }),
   });
+}
+
+// --- Documents ---
+
+export function getDocuments() {
+  return request<Document[]>("/documents");
+}
+
+export function getDocument(id: string) {
+  return request<Document>(`/documents/${id}`);
+}
+
+export function createDocument(title: string, projectId: string) {
+  return request<Document>("/documents", {
+    method: "POST",
+    body: JSON.stringify({ title, projectId }),
+  });
+}
+
+export function updateDocument(
+  id: string,
+  data: { title?: string; content?: unknown }
+) {
+  return request<Document>(`/documents/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteDocument(id: string) {
+  return request<void>(`/documents/${id}`, { method: "DELETE" });
 }

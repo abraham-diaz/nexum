@@ -15,3 +15,7 @@ packages/shared/prisma/migrations
 # OS
 .DS_Store
 Thumbs.db
+
+# CLAUDE
+CLAUDE.md
+settings.local.json

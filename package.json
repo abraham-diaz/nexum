@@ -2,15 +2,21 @@
   "name": "nexum",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r dev",
+    "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.1",
-    "pg": "^8.18.0"
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.18.0",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.16.0"
   }
 }

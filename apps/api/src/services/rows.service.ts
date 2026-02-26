@@ -1,4 +1,5 @@
-import { prisma, Prisma } from '@nexum/shared';
+import { prisma } from '@nexum/shared';
+import type { Prisma } from '@nexum/shared';
 
 export function findAll(databaseId: string) {
   return prisma.row.findMany({
@@ -23,7 +24,7 @@ export function create(data: {
         cells: {
           create: data.cells.map((c) => ({
             propertyId: c.propertyId,
-            value: (c.value ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+            value: (c.value ?? null) as Prisma.InputJsonValue | null,
           })),
         },
       }),

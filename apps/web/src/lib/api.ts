@@ -1,12 +1,97 @@
 const API_BASE = "http://localhost:3000/api";
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+export function getAccessToken() {
+  return accessToken;
+}
+
+// --- Auth API ---
+
+export async function loginApi(user: string, password: string) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    ...options,
+    credentials: "include",
+    body: JSON.stringify({ user, password }),
   });
 
   if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? "Login failed");
+  }
+
+  return res.json() as Promise<{ accessToken: string }>;
+}
+
+export async function refreshApi() {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error("Refresh failed");
+
+  return res.json() as Promise<{ accessToken: string }>;
+}
+
+export async function logoutApi() {
+  await fetch(`${API_BASE}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
+// --- Generic request with auth ---
+
+let isRefreshing: Promise<void> | null = null;
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const doFetch = () =>
+    fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...options?.headers,
+      },
+      credentials: "include",
+    });
+
+  let res = await doFetch();
+
+  // If 401, try refreshing the token once
+  if (res.status === 401 && accessToken) {
+    if (!isRefreshing) {
+      isRefreshing = refreshApi()
+        .then((data) => {
+          accessToken = data.accessToken;
+        })
+        .catch(() => {
+          accessToken = null;
+          window.location.href = "/login";
+        })
+        .finally(() => {
+          isRefreshing = null;
+        });
+    }
+
+    await isRefreshing;
+
+    if (accessToken) {
+      res = await doFetch();
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      accessToken = null;
+      window.location.href = "/login";
+    }
     const body = await res.json().catch(() => null);
     throw new Error(body?.error ?? `Request failed: ${res.status}`);
   }

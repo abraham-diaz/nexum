@@ -204,7 +204,7 @@ export default function KanbanBoard({
         return (
           <div
             key={col}
-            className={`flex flex-col min-w-[280px] max-w-[320px] shrink-0 rounded-lg bg-muted/30 border transition-colors ${
+            className={`flex flex-col min-w-70 max-w-[320px] shrink-0 rounded-lg bg-muted/30 border transition-colors ${
               isOver ? "border-primary/50 bg-primary/5" : ""
             }`}
             onDragOver={(e) => handleDragOver(e, col)}
@@ -222,7 +222,7 @@ export default function KanbanBoard({
             </div>
 
             {/* Cards */}
-            <div className="flex flex-col gap-2 p-2 flex-1 min-h-[100px]">
+            <div className="flex flex-col gap-2 p-2 flex-1 min-h-25">
               {colRows.map((row) => {
                 const title = titleProp
                   ? String(getCellValue(row, titleProp.id) ?? "")

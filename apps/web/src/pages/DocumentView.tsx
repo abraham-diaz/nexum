@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import { useDocument, useUpdateDocument } from "@/hooks/use-documents";
+import { useRecentItems } from "@/hooks/use-recent";
 
 export default function DocumentView() {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +19,22 @@ export default function DocumentView() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
+  const { addItem: addRecent } = useRecentItems();
+
   useEffect(() => {
     if (doc) setTitleValue(doc.title);
   }, [doc]);
+
+  useEffect(() => {
+    if (doc) {
+      addRecent({
+        id: doc.id,
+        type: "document",
+        name: doc.title,
+        path: `/documents/${doc.id}`,
+      });
+    }
+  }, [doc?.id, doc?.title]);
 
   const saveContent = useCallback(
     (content: unknown) => {

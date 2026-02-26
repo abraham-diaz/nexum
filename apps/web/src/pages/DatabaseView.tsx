@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,6 +6,8 @@ import {
   Trash2,
   Loader2,
   Columns3,
+  TableProperties,
+  KanbanSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +37,82 @@ import {
   useDeleteRow,
   useUpsertCell,
 } from "@/hooks/use-database";
+import { useUpdateViewType } from "@/hooks/use-databases";
+import KanbanBoard from "@/components/database/KanbanBoard";
+import { useRecentItems } from "@/hooks/use-recent";
 import type { Property, Row } from "@/lib/api";
+
+function SelectCell({
+  value,
+  options,
+  onSave,
+}: {
+  value: unknown;
+  options: string[];
+  onSave: (value: string | null) => void;
+}) {
+  const current = String(value ?? "");
+
+  const colorMap: Record<string, string> = {};
+  const palette = [
+    "bg-blue-500/15 text-blue-400",
+    "bg-green-500/15 text-green-400",
+    "bg-yellow-500/15 text-yellow-400",
+    "bg-red-500/15 text-red-400",
+    "bg-purple-500/15 text-purple-400",
+    "bg-pink-500/15 text-pink-400",
+    "bg-cyan-500/15 text-cyan-400",
+    "bg-orange-500/15 text-orange-400",
+  ];
+  options.forEach((opt, i) => {
+    colorMap[opt] = palette[i % palette.length];
+  });
+
+  return (
+    <div className="min-h-[32px] px-1 py-1">
+      <select
+        className="h-7 w-full rounded border-none bg-transparent text-sm focus:ring-1 focus:ring-ring outline-none px-1"
+        value={current}
+        onChange={(e) => onSave(e.target.value || null)}
+      >
+        <option value="">—</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+      {current && (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5 ${colorMap[current] ?? palette[0]}`}
+        >
+          {current}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function DateCell({
+  value,
+  onSave,
+}: {
+  value: unknown;
+  onSave: (value: string | null) => void;
+}) {
+  const current = String(value ?? "");
+
+  return (
+    <div className="min-h-[32px] px-1 py-1">
+      <input
+        type="date"
+        className="h-7 w-full rounded border-none bg-transparent text-sm focus:ring-1 focus:ring-ring outline-none px-1"
+        value={current}
+        onChange={(e) => onSave(e.target.value || null)}
+      />
+    </div>
+  );
+}
 
 function EditableCell({
   value,
@@ -93,13 +170,17 @@ function getCellValue(row: Row, propertyId: string): unknown {
   return cell?.value ?? null;
 }
 
-const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "RELATION"] as const;
+const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
 
 export default function DatabaseView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: database, isLoading: dbLoading, error: dbError } = useDatabase(id!);
+  const {
+    data: database,
+    isLoading: dbLoading,
+    error: dbError,
+  } = useDatabase(id!);
   const { data: rows, isLoading: rowsLoading } = useRows(id!);
 
   const createProperty = useCreateProperty(id!);
@@ -107,6 +188,19 @@ export default function DatabaseView() {
   const createRow = useCreateRow(id!);
   const deleteRow = useDeleteRow(id!);
   const upsertCell = useUpsertCell(id!);
+  const updateViewType = useUpdateViewType();
+  const { addItem: addRecent } = useRecentItems();
+
+  useEffect(() => {
+    if (database) {
+      addRecent({
+        id: database.id,
+        type: "database",
+        name: database.name,
+        path: `/databases/${database.id}`,
+      });
+    }
+  }, [database?.id, database?.name]);
 
   const [addColOpen, setAddColOpen] = useState(false);
   const [colName, setColName] = useState("");
@@ -138,15 +232,57 @@ export default function DatabaseView() {
 
   const properties = database.properties ?? [];
   const sortedRows = [...(rows ?? [])].sort((a, b) => a.order - b.order);
+  const viewType = database.viewType ?? "TABLE";
+
+  // Find first SELECT property for kanban grouping
+  const groupByProperty = properties.find((p) => p.type === "SELECT");
+  const canShowBoard = !!groupByProperty;
+
+  const toggleView = () => {
+    const newView = viewType === "TABLE" ? "BOARD" : "TABLE";
+    updateViewType.mutate({ id: id!, viewType: newView });
+  };
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight">{database.name}</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {database.name}
+          </h1>
+        </div>
+        {canShowBoard && (
+          <div className="flex items-center border rounded-md">
+            <Button
+              variant={viewType === "TABLE" ? "secondary" : "ghost"}
+              size="sm"
+              className="rounded-r-none gap-1.5"
+              onClick={() =>
+                viewType !== "TABLE" &&
+                updateViewType.mutate({ id: id!, viewType: "TABLE" })
+              }
+            >
+              <TableProperties className="h-4 w-4" />
+              Table
+            </Button>
+            <Button
+              variant={viewType === "BOARD" ? "secondary" : "ghost"}
+              size="sm"
+              className="rounded-l-none gap-1.5"
+              onClick={() =>
+                viewType !== "BOARD" &&
+                updateViewType.mutate({ id: id!, viewType: "BOARD" })
+              }
+            >
+              <KanbanSquare className="h-4 w-4" />
+              Board
+            </Button>
+          </div>
+        )}
       </div>
 
       {properties.length === 0 ? (
@@ -161,6 +297,18 @@ export default function DatabaseView() {
             Add Column
           </Button>
         </div>
+      ) : viewType === "BOARD" && groupByProperty ? (
+        <KanbanBoard
+          groupByProperty={groupByProperty}
+          properties={properties}
+          rows={sortedRows}
+          onCreateRow={(cells) => createRow.mutate(cells)}
+          onUpdateCell={(rowId, propertyId, value) =>
+            upsertCell.mutate({ rowId, propertyId, value })
+          }
+          onDeleteRow={(rowId) => deleteRow.mutate(rowId)}
+          isCreating={createRow.isPending}
+        />
       ) : (
         <div className="rounded-md border overflow-auto">
           <Table>
@@ -215,16 +363,45 @@ export default function DatabaseView() {
                   </TableCell>
                   {properties.map((prop) => (
                     <TableCell key={prop.id} className="p-0">
-                      <EditableCell
-                        value={getCellValue(row, prop.id)}
-                        onSave={(value) =>
-                          upsertCell.mutate({
-                            rowId: row.id,
-                            propertyId: prop.id,
-                            value,
-                          })
-                        }
-                      />
+                      {prop.type === "SELECT" &&
+                      prop.config &&
+                      (prop.config as { options?: string[] }).options ? (
+                        <SelectCell
+                          value={getCellValue(row, prop.id)}
+                          options={
+                            (prop.config as { options: string[] }).options
+                          }
+                          onSave={(value) =>
+                            upsertCell.mutate({
+                              rowId: row.id,
+                              propertyId: prop.id,
+                              value,
+                            })
+                          }
+                        />
+                      ) : prop.type === "DATE" ? (
+                        <DateCell
+                          value={getCellValue(row, prop.id)}
+                          onSave={(value) =>
+                            upsertCell.mutate({
+                              rowId: row.id,
+                              propertyId: prop.id,
+                              value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <EditableCell
+                          value={getCellValue(row, prop.id)}
+                          onSave={(value) =>
+                            upsertCell.mutate({
+                              rowId: row.id,
+                              propertyId: prop.id,
+                              value,
+                            })
+                          }
+                        />
+                      )}
                     </TableCell>
                   ))}
                   <TableCell />

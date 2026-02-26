@@ -10,11 +10,26 @@ export function useDatabases() {
   });
 }
 
+export function useTemplates() {
+  return useQuery({
+    queryKey: ["databases", "templates"],
+    queryFn: api.getTemplates,
+    staleTime: Infinity,
+  });
+}
+
 export function useCreateDatabase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, projectId }: { name: string; projectId: string }) =>
-      api.createDatabase(name, projectId),
+    mutationFn: ({
+      name,
+      projectId,
+      templateId,
+    }: {
+      name: string;
+      projectId: string;
+      templateId?: string;
+    }) => api.createDatabase(name, projectId, templateId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DATABASES_KEY });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -41,6 +56,24 @@ export function useDeleteDatabase() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DATABASES_KEY });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+export function useUpdateViewType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      viewType,
+    }: {
+      id: string;
+      viewType: "TABLE" | "BOARD";
+    }) => api.updateDatabaseViewType(id, viewType),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["databases", variables.id],
+      });
     },
   });
 }

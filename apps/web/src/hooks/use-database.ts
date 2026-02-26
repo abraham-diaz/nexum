@@ -45,7 +45,8 @@ export function useDeleteProperty(databaseId: string) {
 export function useCreateRow(databaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.createRow(databaseId),
+    mutationFn: (cells?: { propertyId: string; value: unknown }[]) =>
+      api.createRow(databaseId, cells),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["databases", databaseId, "rows"],

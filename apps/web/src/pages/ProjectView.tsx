@@ -9,6 +9,8 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  KanbanSquare,
+  Table2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,13 +40,19 @@ import {
   useCreateDatabase,
   useUpdateDatabase,
   useDeleteDatabase,
+  useTemplates,
 } from "@/hooks/use-databases";
 import {
   useCreateDocument,
   useUpdateDocument,
   useDeleteDocument,
 } from "@/hooks/use-documents";
-import type { Project, Database as DatabaseType, Document } from "@/lib/api";
+import type {
+  Project,
+  Database as DatabaseType,
+  Document,
+  DatabaseTemplate,
+} from "@/lib/api";
 
 function NameFormDialog({
   open,
@@ -143,6 +151,130 @@ function DeleteConfirmDialog({
   );
 }
 
+const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
+  kanban: <KanbanSquare className="h-8 w-8" />,
+};
+
+function CreateDatabaseDialog({
+  open,
+  onOpenChange,
+  templates,
+  onSubmit,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  templates: DatabaseTemplate[];
+  onSubmit: (name: string, templateId?: string) => void;
+  isPending: boolean;
+}) {
+  const [step, setStep] = useState<"template" | "name">("template");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>(
+    undefined
+  );
+  const [name, setName] = useState("");
+
+  const handleOpenChange = (open: boolean) => {
+    onOpenChange(open);
+    if (!open) {
+      setStep("template");
+      setSelectedTemplate(undefined);
+      setName("");
+    }
+  };
+
+  const selectTemplate = (templateId?: string) => {
+    setSelectedTemplate(templateId);
+    setStep("name");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        {step === "template" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Create database</DialogTitle>
+              <DialogDescription>
+                Choose a template or start from scratch.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => selectTemplate(undefined)}
+                className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors hover:border-foreground/30 hover:bg-muted/50"
+              >
+                <Table2 className="h-8 w-8 text-muted-foreground" />
+                <span className="text-sm font-medium">Blank</span>
+                <span className="text-xs text-muted-foreground">
+                  Start with an empty table
+                </span>
+              </button>
+              {templates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => selectTemplate(tpl.id)}
+                  className="flex flex-col items-center gap-2 rounded-lg border p-6 text-center transition-colors hover:border-foreground/30 hover:bg-muted/50"
+                >
+                  {TEMPLATE_ICONS[tpl.icon] ?? (
+                    <Database className="h-8 w-8 text-muted-foreground" />
+                  )}
+                  <span className="text-sm font-medium">{tpl.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {tpl.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Name your database</DialogTitle>
+              <DialogDescription>
+                {selectedTemplate
+                  ? `Creating from "${templates.find((t) => t.id === selectedTemplate)?.name}" template.`
+                  : "Starting with a blank database."}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (name.trim()) onSubmit(name.trim(), selectedTemplate);
+              }}
+            >
+              <Input
+                placeholder="Database name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+              />
+              <DialogFooter className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setStep("template");
+                    setName("");
+                  }}
+                >
+                  Back
+                </Button>
+                <Button type="submit" disabled={!name.trim() || isPending}>
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ProjectView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -157,6 +289,7 @@ export default function ProjectView() {
   const createDbMutation = useCreateDatabase();
   const updateDbMutation = useUpdateDatabase();
   const deleteDbMutation = useDeleteDatabase();
+  const { data: templates = [] } = useTemplates();
 
   // Document mutations
   const createDocMutation = useCreateDocument();
@@ -491,18 +624,16 @@ export default function ProjectView() {
       />
 
       {/* --- Dialogs: Databases --- */}
-      <NameFormDialog
+      <CreateDatabaseDialog
         open={createDbOpen}
         onOpenChange={(open) => {
           setCreateDbOpen(open);
           if (!open) createDbMutation.reset();
         }}
-        title="Create database"
-        description="Give your new database a name."
-        placeholder="Database name"
-        onSubmit={(name) => {
+        templates={templates}
+        onSubmit={(name, templateId) => {
           createDbMutation.mutate(
-            { name, projectId: id! },
+            { name, projectId: id!, templateId },
             { onSuccess: () => setCreateDbOpen(false) }
           );
         }}

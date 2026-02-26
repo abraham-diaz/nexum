@@ -34,15 +34,30 @@ export interface ProjectDetail extends Omit<Project, "_count"> {
 export interface Database {
   id: string;
   name: string;
+  viewType: "TABLE" | "BOARD";
   projectId: string;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface DatabaseTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  defaultViewType: "TABLE" | "BOARD";
+  properties: {
+    name: string;
+    type: Property["type"];
+    order: number;
+    config?: unknown;
+  }[];
+}
+
 export interface Property {
   id: string;
   name: string;
-  type: "TEXT" | "NUMBER" | "SELECT" | "RELATION";
+  type: "TEXT" | "NUMBER" | "SELECT" | "DATE" | "RELATION";
   order: number;
   config: unknown;
   databaseId: string;
@@ -116,10 +131,28 @@ export function getDatabases() {
   return request<Database[]>("/databases");
 }
 
-export function createDatabase(name: string, projectId: string) {
+export function getTemplates() {
+  return request<DatabaseTemplate[]>("/databases/templates");
+}
+
+export function createDatabase(
+  name: string,
+  projectId: string,
+  templateId?: string
+) {
   return request<Database>("/databases", {
     method: "POST",
-    body: JSON.stringify({ name, projectId }),
+    body: JSON.stringify({ name, projectId, templateId }),
+  });
+}
+
+export function updateDatabaseViewType(
+  id: string,
+  viewType: "TABLE" | "BOARD"
+) {
+  return request<Database>(`/databases/${id}/view-type`, {
+    method: "PATCH",
+    body: JSON.stringify({ viewType }),
   });
 }
 
@@ -158,8 +191,14 @@ export function deleteProperty(databaseId: string, id: string) {
   });
 }
 
-export function createRow(databaseId: string) {
-  return request<Row>(`/databases/${databaseId}/rows`, { method: "POST" });
+export function createRow(
+  databaseId: string,
+  cells?: { propertyId: string; value: unknown }[]
+) {
+  return request<Row>(`/databases/${databaseId}/rows`, {
+    method: "POST",
+    body: JSON.stringify({ cells }),
+  });
 }
 
 export function deleteRow(databaseId: string, id: string) {

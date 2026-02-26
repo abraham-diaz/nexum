@@ -1,10 +1,25 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, Settings, PanelLeftClose, PanelLeft } from "lucide-react";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Settings,
+  PanelLeftClose,
+  PanelLeft,
+  Database,
+  FileText,
+  Clock,
+} from "lucide-react";
+import { useRecentItems } from "@/hooks/use-recent";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/projects", icon: FolderKanban, label: "Projects" },
 ];
+
+const RECENT_ICONS = {
+  database: Database,
+  document: FileText,
+};
 
 interface SidebarProps {
   collapsed: boolean;
@@ -12,6 +27,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
+  const { items: recentItems } = useRecentItems();
+
   return (
     <aside
       className={`flex flex-col h-screen bg-zinc-950 text-zinc-400 border-r border-zinc-800 shrink-0 overflow-hidden transition-[width] duration-200 ${
@@ -27,8 +44,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         </button>
       </div>
 
-
-      <nav className="flex-1 flex flex-col gap-1 px-2">
+      <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -47,6 +63,38 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             <span>{label}</span>
           </NavLink>
         ))}
+
+        {/* Recent items */}
+        {recentItems.length > 0 && !collapsed && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 px-3 py-1">
+              <Clock size={12} className="text-zinc-600 shrink-0" />
+              <span className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium">
+                Recent
+              </span>
+            </div>
+            {recentItems.map((item) => {
+              const Icon = RECENT_ICONS[item.type];
+              return (
+                <NavLink
+                  key={item.id}
+                  to={item.path}
+                  title={item.name}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors ${
+                      isActive
+                        ? "bg-zinc-800 text-white"
+                        : "hover:bg-zinc-900 hover:text-zinc-200"
+                    }`
+                  }
+                >
+                  <Icon size={14} className="shrink-0 text-zinc-500" />
+                  <span className="truncate text-xs">{item.name}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       <div className="px-2 pb-4">

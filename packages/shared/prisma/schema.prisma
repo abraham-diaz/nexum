@@ -24,6 +24,7 @@ model Project {
 model Database {
   id         String     @id @default(cuid())
   name       String
+  viewType   ViewType   @default(TABLE)
   properties Property[]
   rows       Row[]
 
@@ -96,9 +97,15 @@ model Document {
   updatedAt DateTime @updatedAt
 }
 
+enum ViewType {
+  TABLE
+  BOARD
+}
+
 enum PropertyType {
   TEXT
   NUMBER
   SELECT
+  DATE
   RELATION
 }

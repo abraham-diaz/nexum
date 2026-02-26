@@ -1,4 +1,5 @@
-import { prisma, Prisma } from '@nexum/shared';
+import { prisma } from '@nexum/shared';
+import type { Prisma } from '@nexum/shared';
 import { DATABASE_TEMPLATES } from '../templates/database-templates.js';
 
 export function findAll(projectId?: string) {
@@ -41,7 +42,7 @@ export function createFromTemplate(name: string, projectId: string, templateId: 
         name: p.name,
         type: p.type,
         order: p.order,
-        config: (p.config ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        config: (p.config ?? null) as Prisma.InputJsonValue | null,
       })),
     });
 

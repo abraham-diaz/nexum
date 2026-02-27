@@ -67,6 +67,51 @@ export function useDeleteRow(databaseId: string) {
   });
 }
 
+export function useReorderRows(databaseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      api.reorderRows(databaseId, orderedIds),
+    onMutate: async (orderedIds) => {
+      await queryClient.cancelQueries({
+        queryKey: ["databases", databaseId, "rows"],
+      });
+      const previous = queryClient.getQueryData<api.Row[]>([
+        "databases",
+        databaseId,
+        "rows",
+      ]);
+      if (previous) {
+        const rowMap = new Map(previous.map((r) => [r.id, r]));
+        const optimistic = orderedIds
+          .map((id, index) => {
+            const row = rowMap.get(id);
+            return row ? { ...row, order: index } : undefined;
+          })
+          .filter(Boolean) as api.Row[];
+        queryClient.setQueryData(
+          ["databases", databaseId, "rows"],
+          optimistic
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["databases", databaseId, "rows"],
+          context.previous
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["databases", databaseId, "rows"],
+      });
+    },
+  });
+}
+
 export function useUpsertCell(databaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({

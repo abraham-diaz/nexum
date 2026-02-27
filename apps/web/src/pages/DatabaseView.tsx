@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,7 +8,24 @@ import {
   Columns3,
   TableProperties,
   KanbanSquare,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,6 +53,7 @@ import {
   useCreateRow,
   useDeleteRow,
   useUpsertCell,
+  useReorderRows,
 } from "@/hooks/use-database";
 import { useUpdateViewType } from "@/hooks/use-databases";
 import KanbanBoard from "@/components/database/KanbanBoard";
@@ -172,6 +190,90 @@ function getCellValue(row: Row, propertyId: string): unknown {
 
 const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
 
+function SortableRow({
+  row,
+  idx,
+  properties,
+  onDelete,
+  onUpsertCell,
+}: {
+  row: Row;
+  idx: number;
+  properties: Property[];
+  onDelete: (id: string) => void;
+  onUpsertCell: (rowId: string, propertyId: string, value: unknown) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: row.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : undefined,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="text-muted-foreground text-xs">
+        <div className="flex items-center gap-1">
+          <button
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span>{idx + 1}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 opacity-0 group-hover:opacity-100"
+            onClick={() => onDelete(row.id)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </TableCell>
+      {properties.map((prop) => (
+        <TableCell key={prop.id} className="p-0">
+          {prop.type === "SELECT" &&
+          prop.config &&
+          (prop.config as { options?: string[] }).options ? (
+            <SelectCell
+              value={getCellValue(row, prop.id)}
+              options={(prop.config as { options: string[] }).options}
+              onSave={(value) =>
+                onUpsertCell(row.id, prop.id, value)
+              }
+            />
+          ) : prop.type === "DATE" ? (
+            <DateCell
+              value={getCellValue(row, prop.id)}
+              onSave={(value) =>
+                onUpsertCell(row.id, prop.id, value)
+              }
+            />
+          ) : (
+            <EditableCell
+              value={getCellValue(row, prop.id)}
+              onSave={(value) =>
+                onUpsertCell(row.id, prop.id, value)
+              }
+            />
+          )}
+        </TableCell>
+      ))}
+      <TableCell />
+    </TableRow>
+  );
+}
+
 export default function DatabaseView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -188,7 +290,13 @@ export default function DatabaseView() {
   const createRow = useCreateRow(id!);
   const deleteRow = useDeleteRow(id!);
   const upsertCell = useUpsertCell(id!);
+  const reorderRows = useReorderRows(id!);
   const updateViewType = useUpdateViewType();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
   const { addItem: addRecent } = useRecentItems();
 
   useEffect(() => {
@@ -231,8 +339,25 @@ export default function DatabaseView() {
   }
 
   const properties = database.properties ?? [];
-  const sortedRows = [...(rows ?? [])].sort((a, b) => a.order - b.order);
+  const sortedRows = useMemo(
+    () => [...(rows ?? [])].sort((a, b) => a.order - b.order),
+    [rows]
+  );
+  const sortedRowIds = useMemo(
+    () => sortedRows.map((r) => r.id),
+    [sortedRows]
+  );
   const viewType = database.viewType ?? "TABLE";
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = sortedRowIds.indexOf(active.id as string);
+    const newIndex = sortedRowIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = arrayMove(sortedRowIds, oldIndex, newIndex);
+    reorderRows.mutate(newOrder);
+  };
 
   // Find first SELECT property for kanban grouping
   const groupByProperty = properties.find((p) => p.type === "SELECT");
@@ -307,128 +432,91 @@ export default function DatabaseView() {
             upsertCell.mutate({ rowId, propertyId, value })
           }
           onDeleteRow={(rowId) => deleteRow.mutate(rowId)}
+          onReorderRows={(orderedIds) => reorderRows.mutate(orderedIds)}
           isCreating={createRow.isPending}
         />
       ) : (
-        <div className="rounded-md border overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                {properties.map((prop) => (
-                  <TableHead key={prop.id} className="min-w-37.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate">{prop.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-normal uppercase">
-                        {prop.type}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
-                        onClick={() => deleteProperty.mutate(prop.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableHead>
-                ))}
-                <TableHead className="w-10">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setAddColOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedRows.map((row, idx) => (
-                <TableRow key={row.id}>
-                  <TableCell className="text-muted-foreground text-xs">
-                    <div className="flex items-center gap-1">
-                      <span>{idx + 1}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                        onClick={() => deleteRow.mutate(row.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">#</TableHead>
                   {properties.map((prop) => (
-                    <TableCell key={prop.id} className="p-0">
-                      {prop.type === "SELECT" &&
-                      prop.config &&
-                      (prop.config as { options?: string[] }).options ? (
-                        <SelectCell
-                          value={getCellValue(row, prop.id)}
-                          options={
-                            (prop.config as { options: string[] }).options
-                          }
-                          onSave={(value) =>
-                            upsertCell.mutate({
-                              rowId: row.id,
-                              propertyId: prop.id,
-                              value,
-                            })
-                          }
-                        />
-                      ) : prop.type === "DATE" ? (
-                        <DateCell
-                          value={getCellValue(row, prop.id)}
-                          onSave={(value) =>
-                            upsertCell.mutate({
-                              rowId: row.id,
-                              propertyId: prop.id,
-                              value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <EditableCell
-                          value={getCellValue(row, prop.id)}
-                          onSave={(value) =>
-                            upsertCell.mutate({
-                              rowId: row.id,
-                              propertyId: prop.id,
-                              value,
-                            })
-                          }
-                        />
-                      )}
-                    </TableCell>
+                    <TableHead key={prop.id} className="min-w-37.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">{prop.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-normal uppercase">
+                          {prop.type}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
+                          onClick={() => deleteProperty.mutate(prop.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableHead>
                   ))}
-                  <TableCell />
+                  <TableHead className="w-10">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setAddColOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
-              ))}
-              {/* Add row button */}
-              <TableRow>
-                <TableCell colSpan={properties.length + 2}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-muted-foreground"
-                    onClick={() => createRow.mutate(undefined)}
-                    disabled={createRow.isPending}
-                  >
-                    {createRow.isPending ? (
-                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    ) : (
-                      <Plus className="mr-2 h-3 w-3" />
-                    )}
-                    New Row
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                <SortableContext
+                  items={sortedRowIds}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {sortedRows.map((row, idx) => (
+                    <SortableRow
+                      key={row.id}
+                      row={row}
+                      idx={idx}
+                      properties={properties}
+                      onDelete={(rowId) => deleteRow.mutate(rowId)}
+                      onUpsertCell={(rowId, propertyId, value) =>
+                        upsertCell.mutate({ rowId, propertyId, value })
+                      }
+                    />
+                  ))}
+                </SortableContext>
+                {/* Add row button */}
+                <TableRow>
+                  <TableCell colSpan={properties.length + 2}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-muted-foreground"
+                      onClick={() => createRow.mutate(undefined)}
+                      disabled={createRow.isPending}
+                    >
+                      {createRow.isPending ? (
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Plus className="mr-2 h-3 w-3" />
+                      )}
+                      New Row
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </DndContext>
       )}
 
       {/* Add Column Dialog */}

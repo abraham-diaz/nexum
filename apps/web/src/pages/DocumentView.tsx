@@ -122,7 +122,9 @@ export default function DocumentView() {
       </div>
 
       {/* Editor */}
-      <TiptapEditor content={doc.content} onUpdate={saveContent} />
+      <div className="document-light rounded-lg p-6 shadow-sm">
+        <TiptapEditor content={doc.content} onUpdate={saveContent} />
+      </div>
     </div>
   );
 }

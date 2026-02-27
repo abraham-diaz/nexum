@@ -5,6 +5,7 @@ const router: Router = Router({ mergeParams: true });
 
 router.get('/', controller.list);
 router.post('/', controller.create);
+router.patch('/reorder', controller.reorder);
 router.patch('/:id', controller.update);
 router.delete('/:id', controller.remove);
 

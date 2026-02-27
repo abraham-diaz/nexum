@@ -43,3 +43,14 @@ export function update(id: string, order: number) {
 export function remove(id: string) {
   return prisma.row.delete({ where: { id } });
 }
+
+export function reorder(orderedIds: string[]) {
+  return prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.row.update({
+        where: { id },
+        data: { order: index },
+      })
+    )
+  );
+}

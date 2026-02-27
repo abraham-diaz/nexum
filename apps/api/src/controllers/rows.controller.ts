@@ -25,3 +25,9 @@ export const remove: RequestHandler = async (req, res) => {
   await rowsService.remove(req.params.id);
   res.status(204).end();
 };
+
+export const reorder: RequestHandler = async (req, res) => {
+  const { orderedIds } = req.body;
+  await rowsService.reorder(orderedIds);
+  res.json({ ok: true });
+};

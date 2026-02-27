@@ -13,6 +13,7 @@ import propertiesRouter from './routes/properties.route.js';
 import rowsRouter from './routes/rows.route.js';
 import cellsRouter from './routes/cells.route.js';
 import documentsRouter from './routes/documents.route.js';
+import searchRouter from './routes/search.route.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
@@ -35,6 +36,7 @@ app.use('/api/databases/:databaseId/properties', propertiesRouter);
 app.use('/api/databases/:databaseId/rows', rowsRouter);
 app.use('/api/rows/:rowId/cells', cellsRouter);
 app.use('/api/documents', documentsRouter);
+app.use('/api/search', searchRouter);
 
 if (existsSync(webDistPath)) {
   app.use(express.static(webDistPath));

@@ -10,6 +10,7 @@ import {
   FileText,
   Clock,
   LogOut,
+  Search,
 } from "lucide-react";
 import { useRecentItems } from "@/hooks/use-recent";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,9 +30,10 @@ const RECENT_ICONS = {
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  onSearchClick?: () => void;
 }
 
-const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
+const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
   const { items: recentItems, keepOnlyExisting } = useRecentItems();
   const { logout } = useAuth();
   const { data: databases } = useDatabases();
@@ -48,7 +50,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
 
   return (
     <aside
-      className={`flex flex-col h-screen bg-zinc-950 text-zinc-400 border-r border-zinc-800 shrink-0 overflow-hidden transition-[width] duration-200 ${
+      className={`flex flex-col h-screen bg-sidebar text-muted-foreground border-r border-border shrink-0 overflow-hidden transition-[width] duration-200 ${
         collapsed ? "w-14" : "w-60"
       }`}
     >
@@ -59,19 +61,31 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           alt="Nexum"
           className="h-7 w-7 shrink-0 object-contain"
         />
-        <span className={`text-base font-semibold text-white truncate transition-opacity duration-200 ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+        <span className={`text-base font-semibold text-foreground truncate transition-opacity duration-200 ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
           Nexum
         </span>
       </NavLink>
 
       {/* Collapse toggle */}
-      <div className="px-2 pb-2 pt-1">
+      <div className="px-2 pb-2 pt-1 flex items-center gap-1">
         <button
           onClick={onToggle}
-          className="flex items-center justify-center w-10 h-8 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="flex items-center justify-center w-10 h-8 rounded-md text-muted-foreground hover:text-foreground/80 hover:bg-secondary transition-colors"
         >
           {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
         </button>
+        {!collapsed && (
+          <button
+            onClick={onSearchClick}
+            className="flex flex-1 items-center gap-2 h-8 rounded-md border border-border px-2 text-muted-foreground hover:text-foreground/80 hover:bg-secondary transition-colors text-xs"
+          >
+            <Search size={14} />
+            <span className="flex-1 text-left">Search…</span>
+            <kbd className="text-[10px] border border-border rounded px-1 py-0.5 text-muted-foreground/50">
+              ⌘K
+            </kbd>
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
@@ -84,8 +98,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors ${
                 isActive
-                  ? "bg-zinc-800 text-white"
-                  : "hover:bg-zinc-900 hover:text-zinc-200"
+                  ? "bg-secondary text-foreground"
+                  : "hover:bg-secondary/50 hover:text-foreground/80"
               }`
             }
           >
@@ -98,8 +112,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         {recentItems.length > 0 && !collapsed && (
           <div className="mt-4">
             <div className="flex items-center gap-2 px-3 py-1">
-              <Clock size={12} className="text-zinc-600 shrink-0" />
-              <span className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium">
+              <Clock size={12} className="text-muted-foreground/50 shrink-0" />
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground/50 font-medium">
                 Recent
               </span>
             </div>
@@ -113,12 +127,12 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors ${
                       isActive
-                        ? "bg-zinc-800 text-white"
-                        : "hover:bg-zinc-900 hover:text-zinc-200"
+                        ? "bg-secondary text-foreground"
+                        : "hover:bg-secondary/50 hover:text-foreground/80"
                     }`
                   }
                 >
-                  <Icon size={14} className="shrink-0 text-zinc-500" />
+                  <Icon size={14} className="shrink-0 text-muted-foreground" />
                   <span className="truncate text-xs">{item.name}</span>
                 </NavLink>
               );
@@ -134,8 +148,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors ${
               isActive
-                ? "bg-zinc-800 text-white"
-                : "hover:bg-zinc-900 hover:text-zinc-200"
+                ? "bg-secondary text-foreground"
+                : "hover:bg-secondary/50 hover:text-foreground/80"
             }`
           }
         >
@@ -145,7 +159,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         <button
           onClick={logout}
           title="Logout"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors hover:bg-zinc-900 hover:text-zinc-200"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors hover:bg-secondary/50 hover:text-foreground/80"
         >
           <LogOut size={18} className="shrink-0" />
           <span>Logout</span>

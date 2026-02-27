@@ -292,6 +292,13 @@ export function deleteRow(databaseId: string, id: string) {
   });
 }
 
+export function reorderRows(databaseId: string, orderedIds: string[]) {
+  return request<{ ok: boolean }>(`/databases/${databaseId}/rows/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify({ orderedIds }),
+  });
+}
+
 export function upsertCell(rowId: string, propertyId: string, value: unknown) {
   return request<Cell>(`/rows/${rowId}/cells/${propertyId}`, {
     method: "PUT",
@@ -328,4 +335,16 @@ export function updateDocument(
 
 export function deleteDocument(id: string) {
   return request<void>(`/documents/${id}`, { method: "DELETE" });
+}
+
+// --- Search ---
+
+export interface SearchResults {
+  projects: Project[];
+  databases: Database[];
+  documents: Document[];
+}
+
+export function searchAll(query: string) {
+  return request<SearchResults>(`/search?q=${encodeURIComponent(query)}`);
 }

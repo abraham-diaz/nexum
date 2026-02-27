@@ -42,14 +42,6 @@ export default function Dashboard() {
 
   const isLoading = loadingProjects || loadingDatabases || loadingDocuments;
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   const safeProjects = projects ?? [];
   const safeDatabases = databases ?? [];
   const safeDocuments = documents ?? [];
@@ -146,6 +138,14 @@ export default function Dashboard() {
     database: "Database",
     document: "Document",
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

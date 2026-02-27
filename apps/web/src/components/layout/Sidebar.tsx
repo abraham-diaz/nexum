@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -12,6 +13,8 @@ import {
 } from "lucide-react";
 import { useRecentItems } from "@/hooks/use-recent";
 import { useAuth } from "@/hooks/use-auth";
+import { useDatabases } from "@/hooks/use-databases";
+import { useDocuments } from "@/hooks/use-documents";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -29,8 +32,19 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
-  const { items: recentItems } = useRecentItems();
+  const { items: recentItems, keepOnlyExisting } = useRecentItems();
   const { logout } = useAuth();
+  const { data: databases } = useDatabases();
+  const { data: documents } = useDocuments();
+
+  useEffect(() => {
+    if (!databases || !documents) return;
+
+    keepOnlyExisting(
+      databases.map((database) => database.id),
+      documents.map((document) => document.id)
+    );
+  }, [databases, documents, keepOnlyExisting]);
 
   return (
     <aside

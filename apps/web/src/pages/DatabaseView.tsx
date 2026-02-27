@@ -69,7 +69,7 @@ function SelectCell({
   });
 
   return (
-    <div className="min-h-[32px] px-1 py-1">
+    <div className="min-h-8 px-1 py-1">
       <select
         className="h-7 w-full rounded border-none bg-transparent text-sm focus:ring-1 focus:ring-ring outline-none px-1"
         value={current}
@@ -103,7 +103,7 @@ function DateCell({
   const current = String(value ?? "");
 
   return (
-    <div className="min-h-[32px] px-1 py-1">
+    <div className="min-h-8 px-1 py-1">
       <input
         type="date"
         className="h-7 w-full rounded border-none bg-transparent text-sm focus:ring-1 focus:ring-ring outline-none px-1"
@@ -135,7 +135,7 @@ function EditableCell({
   if (!editing) {
     return (
       <div
-        className="min-h-[32px] px-2 py-1 cursor-text rounded hover:bg-muted/50"
+        className="min-h-8 px-2 py-1 cursor-text rounded hover:bg-muted/50"
         onClick={() => {
           setDraft(String(value ?? ""));
           setEditing(true);
@@ -316,7 +316,7 @@ export default function DatabaseView() {
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
                 {properties.map((prop) => (
-                  <TableHead key={prop.id} className="min-w-[150px]">
+                  <TableHead key={prop.id} className="min-w-37.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate">{prop.name}</span>
                       <span className="text-[10px] text-muted-foreground font-normal uppercase">
@@ -414,7 +414,7 @@ export default function DatabaseView() {
                     variant="ghost"
                     size="sm"
                     className="w-full text-muted-foreground"
-                    onClick={() => createRow.mutate()}
+                    onClick={() => createRow.mutate(undefined)}
                     disabled={createRow.isPending}
                   >
                     {createRow.isPending ? (

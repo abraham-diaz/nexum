@@ -10,6 +10,7 @@ packages/shared/prisma/migrations
 
 # Vite temp files
 *.timestamp-*.mjs
+apps/web/dev-dist/
 
 # IDE
 .vscode

@@ -38,7 +38,9 @@ export function useRecentItems() {
   const addItem = useCallback(
     (item: Omit<RecentItem, "visitedAt">) => {
       setItems((prev) => {
-        const filtered = prev.filter((i) => i.id !== item.id);
+        const filtered = prev.filter(
+          (i) => !(i.id === item.id && i.type === item.type)
+        );
         const next = [
           { ...item, visitedAt: Date.now() },
           ...filtered,
@@ -50,5 +52,26 @@ export function useRecentItems() {
     []
   );
 
-  return { items, addItem };
+  const keepOnlyExisting = useCallback(
+    (validDatabaseIds: string[], validDocumentIds: string[]) => {
+      const validDatabases = new Set(validDatabaseIds);
+      const validDocuments = new Set(validDocumentIds);
+
+      setItems((prev) => {
+        const next = prev.filter((item) => {
+          if (item.type === "database") return validDatabases.has(item.id);
+          return validDocuments.has(item.id);
+        });
+
+        if (next.length !== prev.length) {
+          saveItems(next);
+        }
+
+        return next;
+      });
+    },
+    []
+  );
+
+  return { items, addItem, keepOnlyExisting };
 }

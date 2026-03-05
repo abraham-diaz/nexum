@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -60,7 +60,7 @@ import KanbanBoard from "@/components/database/KanbanBoard";
 import { useRecentItems } from "@/hooks/use-recent";
 import type { Property, Row } from "@/lib/api";
 
-function SelectCell({
+const SelectCell = memo(function SelectCell({
   value,
   options,
   onSave,
@@ -71,7 +71,6 @@ function SelectCell({
 }) {
   const current = String(value ?? "");
 
-  const colorMap: Record<string, string> = {};
   const palette = [
     "bg-blue-500/15 text-blue-400",
     "bg-green-500/15 text-green-400",
@@ -82,9 +81,13 @@ function SelectCell({
     "bg-cyan-500/15 text-cyan-400",
     "bg-orange-500/15 text-orange-400",
   ];
-  options.forEach((opt, i) => {
-    colorMap[opt] = palette[i % palette.length];
-  });
+  const colorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    options.forEach((opt, i) => {
+      map[opt] = palette[i % palette.length];
+    });
+    return map;
+  }, [options]);
 
   return (
     <div className="min-h-8 px-1 py-1">
@@ -109,9 +112,9 @@ function SelectCell({
       )}
     </div>
   );
-}
+});
 
-function DateCell({
+const DateCell = memo(function DateCell({
   value,
   onSave,
 }: {
@@ -130,9 +133,9 @@ function DateCell({
       />
     </div>
   );
-}
+});
 
-function EditableCell({
+const EditableCell = memo(function EditableCell({
   value,
   onSave,
 }: {
@@ -181,16 +184,11 @@ function EditableCell({
       autoFocus
     />
   );
-}
-
-function getCellValue(row: Row, propertyId: string): unknown {
-  const cell = row.cells.find((c) => c.propertyId === propertyId);
-  return cell?.value ?? null;
-}
+});
 
 const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
 
-function SortableRow({
+const SortableRow = memo(function SortableRow({
   row,
   idx,
   properties,
@@ -217,6 +215,10 @@ function SortableRow({
     transition,
     opacity: isDragging ? 0.4 : undefined,
   };
+  const cellByPropertyId = useMemo(
+    () => new Map(row.cells.map((c) => [c.propertyId, c.value] as const)),
+    [row.cells]
+  );
 
   return (
     <TableRow ref={setNodeRef} style={style}>
@@ -246,25 +248,19 @@ function SortableRow({
           prop.config &&
           (prop.config as { options?: string[] }).options ? (
             <SelectCell
-              value={getCellValue(row, prop.id)}
+              value={cellByPropertyId.get(prop.id) ?? null}
               options={(prop.config as { options: string[] }).options}
-              onSave={(value) =>
-                onUpsertCell(row.id, prop.id, value)
-              }
+              onSave={(value) => onUpsertCell(row.id, prop.id, value)}
             />
           ) : prop.type === "DATE" ? (
             <DateCell
-              value={getCellValue(row, prop.id)}
-              onSave={(value) =>
-                onUpsertCell(row.id, prop.id, value)
-              }
+              value={cellByPropertyId.get(prop.id) ?? null}
+              onSave={(value) => onUpsertCell(row.id, prop.id, value)}
             />
           ) : (
             <EditableCell
-              value={getCellValue(row, prop.id)}
-              onSave={(value) =>
-                onUpsertCell(row.id, prop.id, value)
-              }
+              value={cellByPropertyId.get(prop.id) ?? null}
+              onSave={(value) => onUpsertCell(row.id, prop.id, value)}
             />
           )}
         </TableCell>
@@ -272,7 +268,7 @@ function SortableRow({
       <TableCell />
     </TableRow>
   );
-}
+});
 
 export default function DatabaseView() {
   const { id } = useParams<{ id: string }>();
@@ -314,6 +310,12 @@ export default function DatabaseView() {
   const [colName, setColName] = useState("");
   const [colType, setColType] = useState<Property["type"]>("TEXT");
 
+  const sortedRows = useMemo(
+    () => [...(rows ?? [])].sort((a, b) => a.order - b.order),
+    [rows]
+  );
+  const sortedRowIds = useMemo(() => sortedRows.map((r) => r.id), [sortedRows]);
+
   const isLoading = dbLoading || rowsLoading;
 
   if (isLoading) {
@@ -328,26 +330,27 @@ export default function DatabaseView() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-destructive">
-          {dbError?.message ?? "Database not found."}
+          {dbError?.message ?? "Base de datos no encontrada."}
         </p>
         <Button variant="outline" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Go back
+          Volver
         </Button>
       </div>
     );
   }
 
   const properties = database.properties ?? [];
-  const sortedRows = useMemo(
-    () => [...(rows ?? [])].sort((a, b) => a.order - b.order),
-    [rows]
-  );
-  const sortedRowIds = useMemo(
-    () => sortedRows.map((r) => r.id),
-    [sortedRows]
-  );
   const viewType = database.viewType ?? "TABLE";
+  const handleDeleteRow = useCallback(
+    (rowId: string) => deleteRow.mutate(rowId),
+    [deleteRow]
+  );
+  const handleUpsertCell = useCallback(
+    (rowId: string, propertyId: string, value: unknown) =>
+      upsertCell.mutate({ rowId, propertyId, value }),
+    [upsertCell]
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -392,7 +395,7 @@ export default function DatabaseView() {
               }
             >
               <TableProperties className="h-4 w-4" />
-              Table
+              Tabla
             </Button>
             <Button
               variant={viewType === "BOARD" ? "secondary" : "ghost"}
@@ -404,7 +407,7 @@ export default function DatabaseView() {
               }
             >
               <KanbanSquare className="h-4 w-4" />
-              Board
+              Tablero
             </Button>
           </div>
         )}
@@ -413,13 +416,13 @@ export default function DatabaseView() {
       {properties.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <Columns3 className="h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-lg font-semibold">No columns yet</h2>
+          <h2 className="text-lg font-semibold">Sin columnas aún</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Add your first column to start building this database.
+            Añade tu primera columna para empezar a construir esta base de datos.
           </p>
           <Button onClick={() => setAddColOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Column
+            Añadir columna
           </Button>
         </div>
       ) : viewType === "BOARD" && groupByProperty ? (
@@ -487,10 +490,8 @@ export default function DatabaseView() {
                       row={row}
                       idx={idx}
                       properties={properties}
-                      onDelete={(rowId) => deleteRow.mutate(rowId)}
-                      onUpsertCell={(rowId, propertyId, value) =>
-                        upsertCell.mutate({ rowId, propertyId, value })
-                      }
+                      onDelete={handleDeleteRow}
+                      onUpsertCell={handleUpsertCell}
                     />
                   ))}
                 </SortableContext>
@@ -509,7 +510,7 @@ export default function DatabaseView() {
                       ) : (
                         <Plus className="mr-2 h-3 w-3" />
                       )}
-                      New Row
+                      Nueva fila
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -532,9 +533,9 @@ export default function DatabaseView() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add column</DialogTitle>
+            <DialogTitle>Añadir columna</DialogTitle>
             <DialogDescription>
-              Choose a name and type for the new column.
+              Elige un nombre y tipo para la nueva columna.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -555,7 +556,7 @@ export default function DatabaseView() {
           >
             <div className="space-y-3">
               <Input
-                placeholder="Column name"
+                placeholder="Nombre de la columna"
                 value={colName}
                 onChange={(e) => setColName(e.target.value)}
                 autoFocus
@@ -577,7 +578,7 @@ export default function DatabaseView() {
             <DialogFooter className="mt-4">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
-                  Cancel
+                  Cancelar
                 </Button>
               </DialogClose>
               <Button
@@ -587,7 +588,7 @@ export default function DatabaseView() {
                 {createProperty.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Add
+                Añadir
               </Button>
             </DialogFooter>
           </form>

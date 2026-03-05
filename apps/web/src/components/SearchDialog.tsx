@@ -51,7 +51,7 @@ export default function SearchDialog({ open, onClose }: SearchDialogProps) {
           <input
             ref={inputRef}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-            placeholder="Search projects, databases, documents…"
+            placeholder="Buscar proyectos, bases de datos, documentos…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -67,21 +67,21 @@ export default function SearchDialog({ open, onClose }: SearchDialogProps) {
         <div className="max-h-80 overflow-y-auto p-2">
           {query.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Type to search…
+              Escribe para buscar…
             </p>
           ) : isLoading && !data ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Searching…
+              Buscando…
             </p>
           ) : !hasResults ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              No results found.
+              Sin resultados.
             </p>
           ) : (
             <>
               {data!.projects.length > 0 && (
                 <ResultGroup
-                  label="Projects"
+                  label="Proyectos"
                   items={data!.projects.map((p) => ({
                     id: p.id,
                     name: p.name,
@@ -93,7 +93,7 @@ export default function SearchDialog({ open, onClose }: SearchDialogProps) {
               )}
               {data!.databases.length > 0 && (
                 <ResultGroup
-                  label="Databases"
+                  label="Bases de datos"
                   items={data!.databases.map((d) => ({
                     id: d.id,
                     name: d.name,
@@ -105,7 +105,7 @@ export default function SearchDialog({ open, onClose }: SearchDialogProps) {
               )}
               {data!.documents.length > 0 && (
                 <ResultGroup
-                  label="Documents"
+                  label="Documentos"
                   items={data!.documents.map((d) => ({
                     id: d.id,
                     name: d.title,

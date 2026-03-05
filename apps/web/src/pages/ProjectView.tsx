@@ -97,12 +97,12 @@ function NameFormDialog({
           <DialogFooter className="mt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline">
-                Cancel
+                Cancelar
               </Button>
             </DialogClose>
             <Button type="submit" disabled={!name.trim() || isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
+              Guardar
             </Button>
           </DialogFooter>
         </form>
@@ -130,12 +130,12 @@ function DeleteConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete {label}</DialogTitle>
+          <DialogTitle>Eliminar {label}</DialogTitle>
           <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button
             variant="destructive"
@@ -143,7 +143,7 @@ function DeleteConfirmDialog({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Delete
+            Eliminar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -194,9 +194,9 @@ function CreateDatabaseDialog({
         {step === "template" ? (
           <>
             <DialogHeader>
-              <DialogTitle>Create database</DialogTitle>
+              <DialogTitle>Crear base de datos</DialogTitle>
               <DialogDescription>
-                Choose a template or start from scratch.
+                Elige una plantilla o empieza desde cero.
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -205,9 +205,9 @@ function CreateDatabaseDialog({
                 className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors hover:border-foreground/30 hover:bg-muted/50"
               >
                 <Table2 className="h-8 w-8 text-muted-foreground" />
-                <span className="text-sm font-medium">Blank</span>
+                <span className="text-sm font-medium">En blanco</span>
                 <span className="text-xs text-muted-foreground">
-                  Start with an empty table
+                  Empieza con una tabla vacía
                 </span>
               </button>
               {templates.map((tpl) => (
@@ -230,11 +230,11 @@ function CreateDatabaseDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Name your database</DialogTitle>
+              <DialogTitle>Nombre de la base de datos</DialogTitle>
               <DialogDescription>
                 {selectedTemplate
-                  ? `Creating from "${templates.find((t) => t.id === selectedTemplate)?.name}" template.`
-                  : "Starting with a blank database."}
+                  ? `Creando desde la plantilla "${templates.find((t) => t.id === selectedTemplate)?.name}".`
+                  : "Empezando con una base de datos en blanco."}
               </DialogDescription>
             </DialogHeader>
             <form
@@ -244,7 +244,7 @@ function CreateDatabaseDialog({
               }}
             >
               <Input
-                placeholder="Database name"
+                placeholder="Nombre de la base de datos"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
@@ -258,13 +258,13 @@ function CreateDatabaseDialog({
                     setName("");
                   }}
                 >
-                  Back
+                  Atrás
                 </Button>
                 <Button type="submit" disabled={!name.trim() || isPending}>
                   {isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Create
+                  Crear
                 </Button>
               </DialogFooter>
             </form>
@@ -280,35 +280,27 @@ export default function ProjectView() {
   const navigate = useNavigate();
   const { data: project, isLoading, error } = useProject(id!);
 
-  // Sub-project mutations
   const createProjectMutation = useCreateProject();
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
 
-  // Database mutations
   const createDbMutation = useCreateDatabase();
   const updateDbMutation = useUpdateDatabase();
   const deleteDbMutation = useDeleteDatabase();
   const { data: templates = [] } = useTemplates();
 
-  // Document mutations
   const createDocMutation = useCreateDocument();
   const updateDocMutation = useUpdateDocument();
   const deleteDocMutation = useDeleteDocument();
 
-  // Sub-project dialog state
   const [createSubOpen, setCreateSubOpen] = useState(false);
   const [editSubTarget, setEditSubTarget] = useState<Project | null>(null);
   const [deleteSubTarget, setDeleteSubTarget] = useState<Project | null>(null);
 
-  // Database dialog state
   const [createDbOpen, setCreateDbOpen] = useState(false);
   const [editDbTarget, setEditDbTarget] = useState<DatabaseType | null>(null);
-  const [deleteDbTarget, setDeleteDbTarget] = useState<DatabaseType | null>(
-    null
-  );
+  const [deleteDbTarget, setDeleteDbTarget] = useState<DatabaseType | null>(null);
 
-  // Document dialog state
   const [createDocOpen, setCreateDocOpen] = useState(false);
   const [editDocTarget, setEditDocTarget] = useState<Document | null>(null);
   const [deleteDocTarget, setDeleteDocTarget] = useState<Document | null>(null);
@@ -325,7 +317,7 @@ export default function ProjectView() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-destructive">
-          Failed to load project. Make sure the API server is running.
+          Error al cargar el proyecto. Asegúrate de que el servidor API esté en ejecución.
         </p>
       </div>
     );
@@ -339,7 +331,6 @@ export default function ProjectView() {
   const hasDocuments = documents.length > 0;
   const isEmpty = !hasChildren && !hasDatabases && !hasDocuments;
 
-  // Nivel 1: sin padre, Nivel 2: padre sin abuelo, Nivel 3: padre con abuelo
   const isMaxDepth = !!project.parent?.parentId;
   const canCreateSub = !isMaxDepth;
 
@@ -357,16 +348,16 @@ export default function ProjectView() {
           {canCreateSub && (
             <Button variant="outline" onClick={() => setCreateSubOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Sub-project
+              Subproyecto
             </Button>
           )}
           <Button onClick={() => setCreateDbOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Database
+            Base de datos
           </Button>
           <Button variant="outline" onClick={() => setCreateDocOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Document
+            Documento
           </Button>
         </div>
       </div>
@@ -375,26 +366,26 @@ export default function ProjectView() {
       {isEmpty && (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-lg font-semibold">This project is empty</h2>
+          <h2 className="text-lg font-semibold">Este proyecto está vacío</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
             {canCreateSub
-              ? "Add sub-projects to organize by client, or create databases directly."
-              : "Create your first database in this section."}
+              ? "Añade subproyectos para organizar, o crea bases de datos directamente."
+              : "Crea tu primera base de datos en esta sección."}
           </p>
           <div className="flex gap-2">
             {canCreateSub && (
               <Button variant="outline" onClick={() => setCreateSubOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Sub-project
+                Subproyecto
               </Button>
             )}
             <Button onClick={() => setCreateDbOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Database
+              Base de datos
             </Button>
             <Button variant="outline" onClick={() => setCreateDocOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Document
+              Documento
             </Button>
           </div>
         </div>
@@ -404,7 +395,7 @@ export default function ProjectView() {
       {hasChildren && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Sub-projects
+            Subproyectos
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {children.map((child) => (
@@ -420,16 +411,16 @@ export default function ProjectView() {
                   </CardTitle>
                   <CardDescription>
                     {child._count?.children
-                      ? `${child._count.children} sub-project${child._count.children === 1 ? "" : "s"}`
+                      ? `${child._count.children} ${child._count.children === 1 ? "subproyecto" : "subproyectos"}`
                       : ""}
                     {child._count?.children && child._count?.databases
                       ? " · "
                       : ""}
                     {child._count?.databases
-                      ? `${child._count.databases} database${child._count.databases === 1 ? "" : "s"}`
+                      ? `${child._count.databases} ${child._count.databases === 1 ? "base de datos" : "bases de datos"}`
                       : ""}
                     {!child._count?.children && !child._count?.databases
-                      ? "Empty"
+                      ? "Vacío"
                       : ""}
                   </CardDescription>
                   <CardAction>
@@ -464,7 +455,7 @@ export default function ProjectView() {
       {hasDatabases && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Databases
+            Bases de datos
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {databases.map((db) => (
@@ -479,8 +470,8 @@ export default function ProjectView() {
                     {db.name}
                   </CardTitle>
                   <CardDescription>
-                    Created{" "}
-                    {new Date(db.createdAt).toLocaleDateString(undefined, {
+                    Creado el{" "}
+                    {new Date(db.createdAt).toLocaleDateString("es", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -518,7 +509,7 @@ export default function ProjectView() {
       {hasDocuments && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Documents
+            Documentos
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {documents.map((doc) => (
@@ -533,8 +524,8 @@ export default function ProjectView() {
                     {doc.title}
                   </CardTitle>
                   <CardDescription>
-                    Created{" "}
-                    {new Date(doc.createdAt).toLocaleDateString(undefined, {
+                    Creado el{" "}
+                    {new Date(doc.createdAt).toLocaleDateString("es", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -575,9 +566,9 @@ export default function ProjectView() {
           setCreateSubOpen(open);
           if (!open) createProjectMutation.reset();
         }}
-        title="Create sub-project"
-        description="Give your new sub-project a name."
-        placeholder="Sub-project name"
+        title="Crear subproyecto"
+        description="Dale un nombre a tu nuevo subproyecto."
+        placeholder="Nombre del subproyecto"
         onSubmit={(name) => {
           createProjectMutation.mutate(
             { name, parentId: id },
@@ -593,9 +584,9 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setEditSubTarget(null);
         }}
-        title="Rename sub-project"
-        description="Enter a new name for this sub-project."
-        placeholder="Sub-project name"
+        title="Renombrar subproyecto"
+        description="Introduce un nuevo nombre para este subproyecto."
+        placeholder="Nombre del subproyecto"
         initialName={editSubTarget?.name}
         onSubmit={(name) => {
           if (!editSubTarget) return;
@@ -612,8 +603,8 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setDeleteSubTarget(null);
         }}
-        label="sub-project"
-        message={`Are you sure you want to delete "${deleteSubTarget?.name}"? All content inside will also be deleted. This action cannot be undone.`}
+        label="subproyecto"
+        message={`¿Estás seguro de que quieres eliminar "${deleteSubTarget?.name}"? Todo el contenido incluido también se eliminará. Esta acción no se puede deshacer.`}
         onConfirm={() => {
           if (!deleteSubTarget) return;
           deleteProjectMutation.mutate(deleteSubTarget.id, {
@@ -646,9 +637,9 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setEditDbTarget(null);
         }}
-        title="Rename database"
-        description="Enter a new name for this database."
-        placeholder="Database name"
+        title="Renombrar base de datos"
+        description="Introduce un nuevo nombre para esta base de datos."
+        placeholder="Nombre de la base de datos"
         initialName={editDbTarget?.name}
         onSubmit={(name) => {
           if (!editDbTarget) return;
@@ -665,8 +656,8 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setDeleteDbTarget(null);
         }}
-        label="database"
-        message={`Are you sure you want to delete "${deleteDbTarget?.name}"? This action cannot be undone.`}
+        label="base de datos"
+        message={`¿Estás seguro de que quieres eliminar "${deleteDbTarget?.name}"? Esta acción no se puede deshacer.`}
         onConfirm={() => {
           if (!deleteDbTarget) return;
           deleteDbMutation.mutate(deleteDbTarget.id, {
@@ -683,9 +674,9 @@ export default function ProjectView() {
           setCreateDocOpen(open);
           if (!open) createDocMutation.reset();
         }}
-        title="Create document"
-        description="Give your new document a title."
-        placeholder="Document title"
+        title="Crear documento"
+        description="Dale un título a tu nuevo documento."
+        placeholder="Título del documento"
         onSubmit={(name) => {
           createDocMutation.mutate(
             { title: name, projectId: id! },
@@ -701,9 +692,9 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setEditDocTarget(null);
         }}
-        title="Rename document"
-        description="Enter a new title for this document."
-        placeholder="Document title"
+        title="Renombrar documento"
+        description="Introduce un nuevo título para este documento."
+        placeholder="Título del documento"
         initialName={editDocTarget?.title}
         onSubmit={(name) => {
           if (!editDocTarget) return;
@@ -720,8 +711,8 @@ export default function ProjectView() {
         onOpenChange={(open) => {
           if (!open) setDeleteDocTarget(null);
         }}
-        label="document"
-        message={`Are you sure you want to delete "${deleteDocTarget?.title}"? This action cannot be undone.`}
+        label="documento"
+        message={`¿Estás seguro de que quieres eliminar "${deleteDocTarget?.title}"? Esta acción no se puede deshacer.`}
         onConfirm={() => {
           if (!deleteDocTarget) return;
           deleteDocMutation.mutate(deleteDocTarget.id, {

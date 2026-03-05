@@ -27,7 +27,7 @@ export default function Login() {
       await login(user, password);
       navigate("/", { replace: true });
     } catch {
-      setError("Invalid credentials");
+      setError("Credenciales incorrectas");
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="user" className="text-sm font-medium">
-                User
+                Usuario
               </label>
               <Input
                 id="user"
@@ -55,7 +55,7 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                Contraseña
               </label>
               <Input
                 id="password"
@@ -70,7 +70,7 @@ export default function Login() {
               <p className="text-sm text-destructive">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>
         </CardContent>

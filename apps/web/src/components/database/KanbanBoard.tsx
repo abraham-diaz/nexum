@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { memo, useState, useRef, useEffect, useMemo } from "react";
 import { Plus, Loader2, Trash2, GripVertical, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Property, Row } from "@/lib/api";
@@ -120,7 +120,7 @@ function getBadgeColor(value: string): string {
   );
 }
 
-function SortableCard({
+const SortableCard = memo(function SortableCard({
   row,
   titleProp,
   badgeProps,
@@ -156,9 +156,11 @@ function SortableCard({
     opacity: isDragging ? 0.4 : undefined,
   };
 
-  const title = titleProp
-    ? String(getCellValue(row, titleProp.id) ?? "")
-    : "";
+  const cellByPropertyId = useMemo(
+    () => new Map(row.cells.map((c) => [c.propertyId, c.value] as const)),
+    [row.cells]
+  );
+  const title = titleProp ? String(cellByPropertyId.get(titleProp.id) ?? "") : "";
 
   return (
     <div
@@ -202,7 +204,7 @@ function SortableCard({
         dateProps.length > 0) && (
         <div className="flex flex-wrap gap-1 items-center">
           {badgeProps.map((bp) => {
-            const val = String(getCellValue(row, bp.id) ?? "");
+            const val = String(cellByPropertyId.get(bp.id) ?? "");
             if (!val) return null;
             return (
               <span
@@ -214,7 +216,7 @@ function SortableCard({
             );
           })}
           {dateProps.map((dp) => {
-            const val = String(getCellValue(row, dp.id) ?? "");
+            const val = String(cellByPropertyId.get(dp.id) ?? "");
             if (!val) return null;
             const formatted = new Date(
               val + "T00:00:00"
@@ -234,7 +236,7 @@ function SortableCard({
             );
           })}
           {extraTextProps.map((tp) => {
-            const val = String(getCellValue(row, tp.id) ?? "");
+            const val = String(cellByPropertyId.get(tp.id) ?? "");
             if (!val) return null;
             return (
               <span
@@ -251,7 +253,7 @@ function SortableCard({
       {/* Status dropdown */}
       <select
         className="w-full text-xs rounded border border-input bg-transparent px-2 py-1"
-        value={String(getCellValue(row, groupByProperty.id) ?? "")}
+        value={String(cellByPropertyId.get(groupByProperty.id) ?? "")}
         onChange={(e) =>
           onUpdateCell(
             row.id,
@@ -270,7 +272,7 @@ function SortableCard({
       </select>
     </div>
   );
-}
+});
 
 export default function KanbanBoard({
   groupByProperty,

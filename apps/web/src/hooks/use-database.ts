@@ -5,6 +5,8 @@ export function useDatabase(id: string) {
   return useQuery({
     queryKey: ["databases", id],
     queryFn: () => api.getDatabase(id),
+    enabled: !!id,
+    staleTime: 30_000,
   });
 }
 
@@ -12,6 +14,8 @@ export function useRows(databaseId: string) {
   return useQuery({
     queryKey: ["databases", databaseId, "rows"],
     queryFn: () => api.getRows(databaseId),
+    enabled: !!databaseId,
+    staleTime: 15_000,
   });
 }
 

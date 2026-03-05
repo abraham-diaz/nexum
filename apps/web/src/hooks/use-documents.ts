@@ -7,6 +7,7 @@ export function useDocuments() {
   return useQuery({
     queryKey: DOCUMENTS_KEY,
     queryFn: api.getDocuments,
+    staleTime: 30_000,
   });
 }
 
@@ -14,6 +15,8 @@ export function useDocument(id: string) {
   return useQuery({
     queryKey: ["documents", id],
     queryFn: () => api.getDocument(id),
+    enabled: !!id,
+    staleTime: 30_000,
   });
 }
 

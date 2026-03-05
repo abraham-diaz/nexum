@@ -7,6 +7,7 @@ export function useProjects() {
   return useQuery({
     queryKey: PROJECTS_KEY,
     queryFn: () => api.getProjects(),
+    staleTime: 60_000,
   });
 }
 
@@ -14,6 +15,8 @@ export function useProject(id: string) {
   return useQuery({
     queryKey: ["projects", id],
     queryFn: () => api.getProject(id),
+    enabled: !!id,
+    staleTime: 60_000,
   });
 }
 

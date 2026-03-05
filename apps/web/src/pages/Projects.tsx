@@ -60,7 +60,7 @@ function ProjectFormDialog({
           }}
         >
           <Input
-            placeholder="Project name"
+            placeholder="Nombre del proyecto"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -68,12 +68,12 @@ function ProjectFormDialog({
           <DialogFooter className="mt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline">
-                Cancel
+                Cancelar
               </Button>
             </DialogClose>
             <Button type="submit" disabled={!name.trim() || isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
+              Guardar
             </Button>
           </DialogFooter>
         </form>
@@ -99,16 +99,16 @@ function DeleteProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete project</DialogTitle>
+          <DialogTitle>Eliminar proyecto</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete{" "}
-            <strong>{project?.name}</strong>? All sub-projects and databases
-            inside will also be deleted. This action cannot be undone.
+            ¿Estás seguro de que quieres eliminar{" "}
+            <strong>{project?.name}</strong>? Todos los subproyectos y bases de
+            datos incluidos también se eliminarán. Esta acción no se puede deshacer.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button
             variant="destructive"
@@ -116,7 +116,7 @@ function DeleteProjectDialog({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Delete
+            Eliminar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -148,7 +148,7 @@ export default function Projects() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-destructive">
-          Failed to load projects. Make sure the API server is running.
+          Error al cargar los proyectos. Asegúrate de que el servidor API esté en ejecución.
         </p>
       </div>
     );
@@ -157,23 +157,23 @@ export default function Projects() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Proyectos</h1>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          New Project
+          Nuevo proyecto
         </Button>
       </div>
 
       {projects?.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-lg font-semibold">No projects yet</h2>
+          <h2 className="text-lg font-semibold">Sin proyectos aún</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Create your first project to start organizing your databases.
+            Crea tu primer proyecto para empezar a organizar tus bases de datos.
           </p>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            New Project
+            Nuevo proyecto
           </Button>
         </div>
       ) : (
@@ -192,13 +192,13 @@ export default function Projects() {
                 <CardDescription>
                   {(project._count?.children ?? 0) > 0 && (
                     <>
-                      {project._count?.children} sub-project
-                      {project._count?.children === 1 ? "" : "s"} &middot;{" "}
+                      {project._count?.children}{" "}
+                      {project._count?.children === 1 ? "subproyecto" : "subproyectos"} &middot;{" "}
                     </>
                   )}
-                  {project._count?.databases ?? 0} database
-                  {project._count?.databases === 1 ? "" : "s"} &middot; Updated{" "}
-                  {new Date(project.updatedAt).toLocaleDateString(undefined, {
+                  {project._count?.databases ?? 0}{" "}
+                  {(project._count?.databases ?? 0) === 1 ? "base de datos" : "bases de datos"} &middot; Actualizado{" "}
+                  {new Date(project.updatedAt).toLocaleDateString("es", {
                     year: "numeric",
                     month: "short",
                     day: "numeric",
@@ -237,8 +237,8 @@ export default function Projects() {
           setCreateOpen(open);
           if (!open) createMutation.reset();
         }}
-        title="Create project"
-        description="Give your new project a name."
+        title="Crear proyecto"
+        description="Dale un nombre a tu nuevo proyecto."
         onSubmit={(name) => {
           createMutation.mutate(
             { name },
@@ -254,8 +254,8 @@ export default function Projects() {
         onOpenChange={(open) => {
           if (!open) setEditTarget(null);
         }}
-        title="Rename project"
-        description="Enter a new name for this project."
+        title="Renombrar proyecto"
+        description="Introduce un nuevo nombre para este proyecto."
         initialName={editTarget?.name}
         onSubmit={(name) => {
           if (!editTarget) return;

@@ -18,8 +18,8 @@ import { useDatabases } from "@/hooks/use-databases";
 import { useDocuments } from "@/hooks/use-documents";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/projects", icon: FolderKanban, label: "Projects" },
+  { to: "/", icon: LayoutDashboard, label: "Inicio" },
+  { to: "/projects", icon: FolderKanban, label: "Proyectos" },
 ];
 
 const RECENT_ICONS = {
@@ -80,7 +80,7 @@ const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
             className="flex flex-1 items-center gap-2 h-8 rounded-md border border-border px-2 text-muted-foreground hover:text-foreground/80 hover:bg-secondary transition-colors text-xs"
           >
             <Search size={14} />
-            <span className="flex-1 text-left">Search…</span>
+            <span className="flex-1 text-left">Buscar…</span>
             <kbd className="text-[10px] border border-border rounded px-1 py-0.5 text-muted-foreground/50">
               ⌘K
             </kbd>
@@ -114,7 +114,7 @@ const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
             <div className="flex items-center gap-2 px-3 py-1">
               <Clock size={12} className="text-muted-foreground/50 shrink-0" />
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground/50 font-medium">
-                Recent
+                Recientes
               </span>
             </div>
             {recentItems.map((item) => {
@@ -144,7 +144,7 @@ const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
       <div className="px-2 pb-4 flex flex-col gap-1">
         <NavLink
           to="/settings"
-          title="Settings"
+          title="Ajustes"
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors ${
               isActive
@@ -154,15 +154,15 @@ const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
           }
         >
           <Settings size={18} className="shrink-0" />
-          <span>Settings</span>
+          <span>Ajustes</span>
         </NavLink>
         <button
           onClick={logout}
-          title="Logout"
+          title="Cerrar sesión"
           className="flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-colors hover:bg-secondary/50 hover:text-foreground/80"
         >
           <LogOut size={18} className="shrink-0" />
-          <span>Logout</span>
+          <span>Cerrar sesión</span>
         </button>
       </div>
     </aside>

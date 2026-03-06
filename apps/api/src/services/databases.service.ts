@@ -20,7 +20,22 @@ export function findById(id: string) {
 }
 
 export function create(name: string, projectId: string) {
-  return prisma.database.create({ data: { name, projectId } });
+  return prisma.$transaction(async (tx) => {
+    const database = await tx.database.create({ data: { name, projectId } });
+    await tx.property.createMany({
+      data: [
+        { databaseId: database.id, name: 'Título', type: 'TEXT', order: 0 },
+        { databaseId: database.id, name: 'Descripción', type: 'TEXT', order: 1 },
+      ],
+    });
+    return tx.database.findUnique({
+      where: { id: database.id },
+      include: {
+        properties: { orderBy: { order: 'asc' } },
+        _count: { select: { rows: true } },
+      },
+    });
+  });
 }
 
 export function createFromTemplate(name: string, projectId: string, templateId: string) {

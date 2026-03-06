@@ -92,7 +92,7 @@ const SelectCell = memo(function SelectCell({
   return (
     <div className="min-h-8 px-1 py-1">
       <select
-        className="h-7 w-full rounded border-none bg-transparent text-sm focus:ring-1 focus:ring-ring outline-none px-1"
+        className="h-7 w-full rounded border-none bg-background text-foreground text-sm focus:ring-1 focus:ring-ring outline-none px-1"
         value={current}
         onChange={(e) => onSave(e.target.value || null)}
       >
@@ -187,6 +187,13 @@ const EditableCell = memo(function EditableCell({
 });
 
 const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  TEXT: "Texto",
+  NUMBER: "Número",
+  SELECT: "Selección",
+  DATE: "Fecha",
+  RELATION: "Relación",
+};
 
 const SortableRow = memo(function SortableRow({
   row,
@@ -316,6 +323,16 @@ export default function DatabaseView() {
   );
   const sortedRowIds = useMemo(() => sortedRows.map((r) => r.id), [sortedRows]);
 
+  const handleDeleteRow = useCallback(
+    (rowId: string) => deleteRow.mutate(rowId),
+    [deleteRow]
+  );
+  const handleUpsertCell = useCallback(
+    (rowId: string, propertyId: string, value: unknown) =>
+      upsertCell.mutate({ rowId, propertyId, value }),
+    [upsertCell]
+  );
+
   const isLoading = dbLoading || rowsLoading;
 
   if (isLoading) {
@@ -342,15 +359,6 @@ export default function DatabaseView() {
 
   const properties = database.properties ?? [];
   const viewType = database.viewType ?? "TABLE";
-  const handleDeleteRow = useCallback(
-    (rowId: string) => deleteRow.mutate(rowId),
-    [deleteRow]
-  );
-  const handleUpsertCell = useCallback(
-    (rowId: string, propertyId: string, value: unknown) =>
-      upsertCell.mutate({ rowId, propertyId, value }),
-    [upsertCell]
-  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -454,7 +462,7 @@ export default function DatabaseView() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate">{prop.name}</span>
                         <span className="text-[10px] text-muted-foreground font-normal uppercase">
-                          {prop.type}
+                          {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type}
                         </span>
                         <Button
                           variant="ghost"
@@ -562,7 +570,7 @@ export default function DatabaseView() {
                 autoFocus
               />
               <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={colType}
                 onChange={(e) =>
                   setColType(e.target.value as Property["type"])
@@ -570,7 +578,7 @@ export default function DatabaseView() {
               >
                 {PROPERTY_TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {PROPERTY_TYPE_LABELS[t] ?? t}
                   </option>
                 ))}
               </select>

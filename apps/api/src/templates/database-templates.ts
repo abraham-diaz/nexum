@@ -16,25 +16,26 @@ export const DATABASE_TEMPLATES: DatabaseTemplate[] = [
   {
     id: 'todo-kanban',
     name: 'Todo / Kanban',
-    description: 'Track tasks with status columns and priority levels',
+    description: 'Gestiona tareas con columnas de estado y prioridad',
     icon: 'kanban',
     defaultViewType: 'BOARD',
     properties: [
-      { name: 'Title', type: 'TEXT', order: 0 },
+      { name: 'Título', type: 'TEXT', order: 0 },
+      { name: 'Descripción', type: 'TEXT', order: 1 },
       {
-        name: 'Status',
-        type: 'SELECT',
-        order: 1,
-        config: { options: ['Todo', 'In Progress', 'Done'] },
-      },
-      {
-        name: 'Priority',
+        name: 'Estado',
         type: 'SELECT',
         order: 2,
-        config: { options: ['Low', 'Medium', 'High'] },
+        config: { options: ['Pendiente', 'En progreso', 'Hecho'] },
       },
-      { name: 'Start Date', type: 'DATE', order: 3 },
-      { name: 'End Date', type: 'DATE', order: 4 },
+      {
+        name: 'Prioridad',
+        type: 'SELECT',
+        order: 3,
+        config: { options: ['Baja', 'Media', 'Alta'] },
+      },
+      { name: 'Fecha inicio', type: 'DATE', order: 4 },
+      { name: 'Fecha fin', type: 'DATE', order: 5 },
     ],
   },
 ];

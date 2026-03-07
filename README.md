@@ -1,12 +1,23 @@
 # Nexum
 
-Personal project management app with databases (tables/kanban), rich-text documents, and nested projects. Built as a single-user self-hosted tool.
+Personal project management app with databases (table/kanban), rich-text documents, and nested projects. Built as a single-user self-hosted tool.
+
+## Features
+
+- **Nested projects** — organize projects in a hierarchical tree with sub-projects
+- **Databases** — table view and Kanban board with drag & drop (dnd-kit)
+- **Typed properties** — Text, Number, Select, Date, and Relation between databases
+- **Documents** — rich text editor with Tiptap (auto-save with debounce)
+- **Global search** — quick search dialog across the entire app
+- **Authentication** — JWT (access + refresh tokens), single user via environment variables
+- **PWA** — installable as a progressive web app (vite-plugin-pwa)
+- **Light/dark theme** — OKLCh color system with CSS custom properties
 
 ## Tech Stack
 
-- **Frontend:** React 18 + Vite, Tailwind CSS v4, shadcn/ui, Tiptap editor, React Query
+- **Frontend:** React 18 + Vite, Tailwind CSS v4, shadcn/ui (Radix + Lucide), React Query, Tiptap, dnd-kit
 - **Backend:** Express.js, Prisma ORM, PostgreSQL
-- **Auth:** JWT (access + refresh tokens), single user via env vars
+- **Auth:** JWT (access + refresh tokens)
 - **Monorepo:** pnpm workspaces
 
 ## Structure
@@ -14,23 +25,38 @@ Personal project management app with databases (tables/kanban), rich-text docume
 ```
 nexum/
 ├─ apps/
-│  ├─ web/                ← React + Vite frontend
+│  ├─ web/                  React + Vite frontend
 │  │  └─ src/
-│  │     ├─ pages/        ← Route-level components
-│  │     ├─ components/   ← UI components (shadcn/ui, layout, editor)
-│  │     ├─ hooks/        ← React Query hooks per domain
-│  │     └─ lib/api.ts    ← API client with auth handling
-│  └─ api/                ← Express backend
+│  │     ├─ pages/          Route-level components (Dashboard, Projects, DatabaseView, DocumentView)
+│  │     ├─ components/
+│  │     │  ├─ ui/          shadcn/ui primitives
+│  │     │  ├─ layout/      Shell (Sidebar, Layout, ProtectedRoute)
+│  │     │  ├─ editor/      Tiptap editor
+│  │     │  └─ database/    KanbanBoard
+│  │     ├─ hooks/          React Query hooks per domain
+│  │     └─ lib/api.ts      API client with auth handling
+│  └─ api/                  Express backend
 │     └─ src/
-│        ├─ routes/       ← HTTP route definitions
-│        ├─ controllers/  ← Request/response handling
-│        ├─ services/     ← Business logic + Prisma queries
-│        └─ middleware/   ← Auth middleware (JWT verification)
+│        ├─ routes/         HTTP route definitions
+│        ├─ controllers/    Request/response handling
+│        ├─ services/       Business logic + Prisma queries
+│        └─ middleware/     Auth middleware (JWT)
 ├─ packages/
-│  └─ shared/             ← Shared types, schemas, Prisma models
+│  └─ shared/               Shared types, schemas, Prisma models
 ├─ package.json
 ├─ pnpm-workspace.yaml
 └─ tsconfig.base.json
+```
+
+## Data Model
+
+```
+Project (hierarchical tree)
+├─ Database (TABLE | BOARD)
+│  ├─ Property (TEXT, NUMBER, SELECT, DATE, RELATION)
+│  └─ Row
+│     └─ Cell (JSON value per property)
+└─ Document (Tiptap JSON content)
 ```
 
 ## Getting Started

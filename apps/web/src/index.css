@@ -206,3 +206,26 @@
 .tiptap em {
   font-style: italic;
 }
+
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.tiptap th,
+.tiptap td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  min-width: 80px;
+}
+
+.tiptap th {
+  background-color: var(--muted);
+  font-weight: 600;
+}
+
+.tiptap .selectedCell {
+  background-color: var(--accent);
+}

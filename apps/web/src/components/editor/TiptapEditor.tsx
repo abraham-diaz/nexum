@@ -1,6 +1,11 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
+import SlashCommands from "./slash-commands";
 import {
   Bold,
   Italic,
@@ -26,7 +31,12 @@ export default function TiptapEditor({ content, onUpdate }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({ placeholder: "Start writing..." }),
+      Placeholder.configure({ placeholder: "Escribe '/' para ver los comandos..." }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      SlashCommands,
     ],
     content: content as any,
     onUpdate: ({ editor }) => {

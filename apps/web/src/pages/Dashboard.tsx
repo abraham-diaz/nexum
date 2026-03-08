@@ -8,12 +8,8 @@ import {
   Loader2,
   ArrowRight,
   Clock3,
-  Sparkles,
   Layers3,
-  CalendarClock,
   Plus,
-  Target,
-  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,11 +44,6 @@ type ActivityItem = {
 };
 
 type QuickCreateType = "project" | "database" | "document";
-
-function getStartOfToday() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -157,39 +148,6 @@ export default function Dashboard() {
     [safeProjects, safeDatabases, safeDocuments, allProjectNameById]
   );
 
-  const todayStart = getStartOfToday();
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const staleThreshold = Date.now() - 14 * 24 * 60 * 60 * 1000;
-
-  const todayItems = activity.filter((item) => +new Date(item.updatedAt) >= todayStart);
-  const weekItems = activity.filter((item) => {
-    const ts = +new Date(item.updatedAt);
-    return ts >= weekAgo && ts < todayStart;
-  });
-  const staleItems = activity
-    .filter((item) => +new Date(item.updatedAt) < staleThreshold)
-    .sort((a, b) => +new Date(a.updatedAt) - +new Date(b.updatedAt))
-    .slice(0, 5);
-
-  const weeklyActive =
-    safeDatabases.filter((d) => +new Date(d.updatedAt) >= weekAgo).length +
-    safeDocuments.filter((d) => +new Date(d.updatedAt) >= weekAgo).length;
-
-  const emptyProjects = sortedProjects.filter((project) => {
-    const dbCount = project._count?.databases ?? 0;
-    const docCount = project._count?.documents ?? 0;
-    return dbCount + docCount === 0;
-  });
-
-  const topProjects = sortedProjects
-    .map((project) => ({
-      ...project,
-      totalItems:
-        (project._count?.databases ?? 0) + (project._count?.documents ?? 0),
-    }))
-    .sort((a, b) => b.totalItems - a.totalItems)
-    .slice(0, 3);
-
   const activityTypeLabel: Record<ActivityItem["type"], string> = {
     project: "Proyecto",
     database: "Base de datos",
@@ -279,7 +237,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
             <CardDescription>Proyectos totales</CardDescription>
@@ -307,221 +265,49 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Sin revisar (+14 dias)</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-3">
-              <AlertTriangle className="h-6 w-6 text-muted-foreground" />
-              {staleItems.length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              Focus hoy
-            </CardTitle>
-            <CardDescription>
-              Prioriza lo que se movio hoy y lo que lleva tiempo parado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Hoy
-              </p>
-              {todayItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin cambios hoy.</p>
-              ) : (
-                <div className="space-y-2">
-                  {todayItems.slice(0, 3).map((item) => (
-                    <button
-                      key={`today-${item.type}-${item.id}`}
-                      className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(item.path)}
-                    >
-                      <div className="text-sm font-medium truncate">{item.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {activityTypeLabel[item.type]}
-                      </div>
-                    </button>
-                  ))}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Clock3 className="h-4 w-4 text-muted-foreground" />
+            Continuar trabajando
+          </CardTitle>
+          <CardDescription>
+            Ultimos elementos actualizados y acceso inmediato.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Sin actividad aun. Crea tu primer proyecto para empezar.
+            </p>
+          ) : (
+            activity.slice(0, 4).map((item) => (
+              <button
+                key={`${item.type}-${item.id}`}
+                className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
+                onClick={() => navigate(item.path)}
+              >
+                <div className="text-sm font-medium truncate">{item.name}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {activityTypeLabel[item.type]} |{" "}
+                  {new Date(item.updatedAt).toLocaleDateString("es", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </div>
-              )}
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Ultimos 7 dias
-              </p>
-              <p className="text-sm">
-                {weekItems.length} elementos tocados esta semana.
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Revisa primero
-              </p>
-              {staleItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nada estancado.</p>
-              ) : (
-                <div className="space-y-2">
-                  {staleItems.map((item) => (
-                    <button
-                      key={`stale-${item.type}-${item.id}`}
-                      className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(item.path)}
-                    >
-                      <div className="text-sm font-medium truncate">{item.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {activityTypeLabel[item.type]} | Ultima edicion{" "}
-                        {new Date(item.updatedAt).toLocaleDateString("es", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Clock3 className="h-4 w-4 text-muted-foreground" />
-              Continuar trabajando
-            </CardTitle>
-            <CardDescription>
-              Ultimos elementos actualizados y acceso inmediato.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Sin actividad aun. Crea tu primer proyecto para empezar.
-              </p>
-            ) : (
-              activity.slice(0, 8).map((item) => (
-                <button
-                  key={`${item.type}-${item.id}`}
-                  className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(item.path)}
-                >
-                  <div className="text-sm font-medium truncate">{item.name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {activityTypeLabel[item.type]} |{" "}
-                    {new Date(item.updatedAt).toLocaleDateString("es", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                {item.type !== "project" && (
+                  <div className="text-xs text-muted-foreground/90 mt-1">
+                    Proyecto: {item.projectName ?? "Proyecto desconocido"}
                   </div>
-                  {item.type !== "project" && (
-                    <div className="text-xs text-muted-foreground/90 mt-1">
-                      Proyecto: {item.projectName ?? "Proyecto desconocido"}
-                    </div>
-                  )}
-                </button>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
-              Atencion
-            </CardTitle>
-            <CardDescription>Proyectos que necesitan accion.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Proyectos vacios
-              </p>
-              {emptyProjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Ninguno vacio.</p>
-              ) : (
-                <div className="space-y-2">
-                  {emptyProjects.slice(0, 3).map((project) => (
-                    <button
-                      key={project.id}
-                      className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      <div className="text-sm font-medium truncate">{project.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Sin bases de datos ni documentos
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Mas poblados
-              </p>
-              {topProjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin proyectos aun.</p>
-              ) : (
-                <div className="space-y-2">
-                  {topProjects.map((project) => (
-                    <button
-                      key={project.id}
-                      className="w-full text-left rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      <div className="text-sm font-medium truncate">{project.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {project._count?.databases ?? 0} BD |{" "}
-                        {project._count?.documents ?? 0} docs
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock className="h-4 w-4 text-muted-foreground" />
-              Estado rapido
-            </CardTitle>
-            <CardDescription>Indicadores semanales del workspace.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="rounded-md border px-3 py-2">
-              <p className="text-xs text-muted-foreground">Activos esta semana</p>
-              <p className="text-2xl font-semibold">{weeklyActive}</p>
-            </div>
-            <div className="rounded-md border px-3 py-2">
-              <p className="text-xs text-muted-foreground">Cambios hoy</p>
-              <p className="text-2xl font-semibold">{todayItems.length}</p>
-            </div>
-            <div className="rounded-md border px-3 py-2">
-              <p className="text-xs text-muted-foreground">Sin revisar (+14 dias)</p>
-              <p className="text-2xl font-semibold">{staleItems.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                )}
+              </button>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">

@@ -81,9 +81,9 @@ export default function DocumentView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-[calc(100vh-3rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0 pb-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -122,7 +122,7 @@ export default function DocumentView() {
       </div>
 
       {/* Editor */}
-      <div className="document-light rounded-lg p-6 shadow-sm">
+      <div className="document-light rounded-lg p-6 shadow-sm flex-1 min-h-0 overflow-y-auto">
         <TiptapEditor content={doc.content} onUpdate={saveContent} />
       </div>
     </div>

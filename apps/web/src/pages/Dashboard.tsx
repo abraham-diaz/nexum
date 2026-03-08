@@ -270,7 +270,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <Button onClick={() => setQuickOpen(true)}>
             <Plus className="mr-1 h-4 w-4" />
-            Captura rapida
+            Nota rápida
           </Button>
           <Button variant="outline" onClick={() => navigate("/projects")}>
             Abrir Proyectos
@@ -591,7 +591,7 @@ export default function Dashboard() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Captura rapida</DialogTitle>
+            <DialogTitle>Nota rápida</DialogTitle>
             <DialogDescription>
               Crea un elemento en segundos y entra directo a editarlo.
             </DialogDescription>

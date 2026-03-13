@@ -229,3 +229,54 @@
 .tiptap .selectedCell {
   background-color: var(--accent);
 }
+
+/* Task list */
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5em 0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  margin: 0.25em 0;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25em;
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--muted-foreground);
+}
+
+/* Underline */
+.tiptap u {
+  text-decoration: underline;
+}
+
+/* Strikethrough */
+.tiptap s {
+  text-decoration: line-through;
+}
+
+/* Highlight */
+.tiptap mark {
+  border-radius: 0.15em;
+  padding: 0.05em 0.15em;
+}

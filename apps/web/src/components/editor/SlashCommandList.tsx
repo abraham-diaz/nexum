@@ -5,6 +5,7 @@ import {
   Heading3,
   List,
   ListOrdered,
+  ListTodo,
   Quote,
   Code,
   Minus,
@@ -68,6 +69,12 @@ const items: SlashCommandItem[] = [
     description: "Bloque de código",
     icon: <Code className="h-4 w-4" />,
     command: (editor) => editor.chain().focus().toggleCodeBlock().run(),
+  },
+  {
+    title: "Lista de tareas",
+    description: "Lista con checkboxes",
+    icon: <ListTodo className="h-4 w-4" />,
+    command: (editor) => editor.chain().focus().toggleTaskList().run(),
   },
   {
     title: "Divisor",

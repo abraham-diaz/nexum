@@ -14,6 +14,8 @@ import rowsRouter from './routes/rows.route.js';
 import cellsRouter from './routes/cells.route.js';
 import documentsRouter from './routes/documents.route.js';
 import searchRouter from './routes/search.route.js';
+import assistantRouter from './routes/assistant.route.js';
+import { buildIndex } from './services/orama-index.service.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
@@ -37,6 +39,7 @@ app.use('/api/databases/:databaseId/rows', rowsRouter);
 app.use('/api/rows/:rowId/cells', cellsRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/assistant', assistantRouter);
 
 if (existsSync(webDistPath)) {
   app.use(express.static(webDistPath));
@@ -47,4 +50,5 @@ if (existsSync(webDistPath)) {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  buildIndex().catch((err) => console.error('[Orama] Index build failed:', err));
 });

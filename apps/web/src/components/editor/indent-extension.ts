@@ -90,8 +90,39 @@ export const Indent = Extension.create({
 
   addKeyboardShortcuts() {
     return {
-      Tab: () => this.editor.commands.indent(),
-      "Shift-Tab": () => this.editor.commands.outdent(),
+      Tab: () => {
+        const { editor } = this;
+
+        // Inside a list, delegate to native Tiptap sink (nesting)
+        if (
+          editor.isActive("listItem") ||
+          editor.isActive("taskItem")
+        ) {
+          // sinkListItem returns false when it can't sink further
+          const sunk = editor.isActive("taskItem")
+            ? editor.chain().focus().sinkListItem("taskItem").run()
+            : editor.chain().focus().sinkListItem("listItem").run();
+          return sunk;
+        }
+
+        return editor.commands.indent();
+      },
+      "Shift-Tab": () => {
+        const { editor } = this;
+
+        // Inside a list, delegate to native Tiptap lift (un-nesting)
+        if (
+          editor.isActive("listItem") ||
+          editor.isActive("taskItem")
+        ) {
+          const lifted = editor.isActive("taskItem")
+            ? editor.chain().focus().liftListItem("taskItem").run()
+            : editor.chain().focus().liftListItem("listItem").run();
+          return lifted;
+        }
+
+        return editor.commands.outdent();
+      },
     };
   },
 });

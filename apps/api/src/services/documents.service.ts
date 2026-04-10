@@ -1,4 +1,5 @@
 import { prisma } from '@nexum/shared';
+import { indexDocument, removeFromIndex } from './orama-index.service.js';
 
 export function findAll(projectId?: string) {
   return prisma.document.findMany({
@@ -11,20 +12,26 @@ export function findById(id: string) {
   return prisma.document.findUnique({ where: { id } });
 }
 
-export function create(title: string, projectId: string) {
-  return prisma.document.create({ data: { title, projectId } });
+export async function create(title: string, projectId: string) {
+  const doc = await prisma.document.create({ data: { title, projectId } });
+  indexDocument(doc.id, doc.title, doc.content, doc.projectId).catch(() => {});
+  return doc;
 }
 
-export function update(id: string, data: { title?: string; content?: unknown }) {
-  return prisma.document.update({
+export async function update(id: string, data: { title?: string; content?: unknown }) {
+  const doc = await prisma.document.update({
     where: { id },
     data: {
       ...(data.title !== undefined && { title: data.title }),
       ...(data.content !== undefined && { content: data.content as any }),
     },
   });
+  indexDocument(doc.id, doc.title, doc.content, doc.projectId).catch(() => {});
+  return doc;
 }
 
-export function remove(id: string) {
-  return prisma.document.delete({ where: { id } });
+export async function remove(id: string) {
+  const doc = await prisma.document.delete({ where: { id } });
+  removeFromIndex(id).catch(() => {});
+  return doc;
 }

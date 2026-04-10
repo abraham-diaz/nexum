@@ -1,27 +1,24 @@
 import { prisma } from '@nexum/shared';
+import { searchIndex } from './orama-index.service.js';
 
-export function search(query: string) {
-  const filter = { contains: query, mode: 'insensitive' as const };
+export async function search(query: string) {
+  const hits = await searchIndex(query, 30);
 
-  return Promise.all([
-    prisma.project.findMany({
-      where: { name: filter },
-      take: 10,
-      orderBy: { updatedAt: 'desc' },
-    }),
-    prisma.database.findMany({
-      where: { name: filter },
-      take: 10,
-      orderBy: { updatedAt: 'desc' },
-    }),
-    prisma.document.findMany({
-      where: { title: filter },
-      take: 10,
-      orderBy: { updatedAt: 'desc' },
-    }),
-  ]).then(([projects, databases, documents]) => ({
-    projects,
-    databases,
-    documents,
-  }));
+  const projectIds = hits.filter((h) => h.type === 'project').map((h) => h.entityId);
+  const databaseIds = hits.filter((h) => h.type === 'database').map((h) => h.entityId);
+  const documentIds = hits.filter((h) => h.type === 'document').map((h) => h.entityId);
+
+  const [projects, databases, documents] = await Promise.all([
+    projectIds.length > 0
+      ? prisma.project.findMany({ where: { id: { in: projectIds } }, take: 10, orderBy: { updatedAt: 'desc' } })
+      : [],
+    databaseIds.length > 0
+      ? prisma.database.findMany({ where: { id: { in: databaseIds } }, take: 10, orderBy: { updatedAt: 'desc' } })
+      : [],
+    documentIds.length > 0
+      ? prisma.document.findMany({ where: { id: { in: documentIds } }, take: 10, orderBy: { updatedAt: 'desc' } })
+      : [],
+  ]);
+
+  return { projects, databases, documents };
 }

@@ -26,6 +26,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@orama/orama':
+        specifier: ^3.1.18
+        version: 3.1.18
       '@prisma/adapter-pg':
         specifier: ^7.4.1
         version: 7.4.1
@@ -56,6 +59,9 @@ importers:
       dotenv:
         specifier: ^17.3.1
         version: 17.3.1
+      groq-sdk:
+        specifier: ^1.1.2
+        version: 1.1.2
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -84,6 +90,9 @@ importers:
       '@nexum/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@orama/orama':
+        specifier: ^3.1.18
+        version: 3.1.18
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -96,6 +105,9 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.22.1
+      groq-sdk:
+        specifier: ^1.1.2
+        version: 1.1.2
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -1292,6 +1304,10 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@orama/orama@3.1.18':
+    resolution: {integrity: sha512-a61ljmRVVyG5MC/698C8/FfFDw5a8LOIvyOLW5fztgUXqUpc1jOfQzOitSCbge657OgXXThmY3Tk8fpiDb4UcA==}
+    engines: {node: '>= 20.0.0'}
 
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
@@ -3438,6 +3454,10 @@ packages:
   graphql@16.12.0:
     resolution: {integrity: sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  groq-sdk@1.1.2:
+    resolution: {integrity: sha512-CZO0XUQQDhn43ri1+lZHxZKpb+bGutgTvFmCJtooexiitGmPqhm1hntOT3nCoaq07e+OpeokVnfUs0i/oQuUaQ==}
+    hasBin: true
 
   has-bigints@1.1.0:
     resolution: {integrity: sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg==}
@@ -6276,6 +6296,8 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
+  '@orama/orama@3.1.18': {}
+
   '@popperjs/core@2.11.8': {}
 
   '@prisma/adapter-pg@7.4.1':
@@ -8614,6 +8636,8 @@ snapshots:
   graphmatch@1.1.1: {}
 
   graphql@16.12.0: {}
+
+  groq-sdk@1.1.2: {}
 
   has-bigints@1.1.0: {}
 

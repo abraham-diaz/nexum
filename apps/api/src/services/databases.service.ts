@@ -1,6 +1,7 @@
 import { prisma } from '@nexum/shared';
 import type { Prisma } from '@nexum/shared';
 import { DATABASE_TEMPLATES } from '../templates/database-templates.js';
+import { indexDatabase, removeFromIndex } from './orama-index.service.js';
 
 export function findAll(projectId?: string) {
   return prisma.database.findMany({
@@ -78,15 +79,20 @@ export function updateViewType(id: string, viewType: 'TABLE' | 'BOARD') {
   });
 }
 
-export function update(id: string, name: string) {
-  return prisma.database.update({
+export async function update(id: string, name: string) {
+  const db = await prisma.database.update({
     where: { id },
     data: { name },
+    include: { properties: { select: { name: true } } },
   });
+  indexDatabase(db.id, db.name, db.projectId, db.properties.map((p) => p.name)).catch(() => {});
+  return db;
 }
 
-export function remove(id: string) {
-  return prisma.database.delete({ where: { id } });
+export async function remove(id: string) {
+  const db = await prisma.database.delete({ where: { id } });
+  removeFromIndex(id).catch(() => {});
+  return db;
 }
 
 export function getTemplates() {

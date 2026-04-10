@@ -348,3 +348,26 @@ export interface SearchResults {
 export function searchAll(query: string) {
   return request<SearchResults>(`/search?q=${encodeURIComponent(query)}`);
 }
+
+// --- Assistant ---
+
+export interface AssistantSource {
+  type: string;
+  entityId: string;
+  title: string;
+  body: string;
+  projectId: string;
+  score: number;
+}
+
+export interface AssistantResponse {
+  answer: string;
+  sources: AssistantSource[];
+}
+
+export function askAssistant(query: string) {
+  return request<AssistantResponse>('/assistant', {
+    method: 'POST',
+    body: JSON.stringify({ query }),
+  });
+}

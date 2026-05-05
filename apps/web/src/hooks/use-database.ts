@@ -22,13 +22,34 @@ export function useRows(databaseId: string) {
 export function useCreateProperty(databaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; type: api.Property["type"] }) =>
-      api.createProperty(databaseId, data),
+    mutationFn: (data: {
+      name: string;
+      type: api.Property["type"];
+      relationDatabaseId?: string;
+    }) => api.createProperty(databaseId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["databases", databaseId] });
       queryClient.invalidateQueries({
         queryKey: ["databases", databaseId, "rows"],
       });
+    },
+  });
+}
+
+export function useUpdateProperty(databaseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: string;
+      name?: string;
+      order?: number;
+      config?: unknown;
+    }) => api.updateProperty(databaseId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["databases", databaseId] });
     },
   });
 }

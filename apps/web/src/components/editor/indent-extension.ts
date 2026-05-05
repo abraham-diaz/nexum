@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -86,6 +87,47 @@ export const Indent = Extension.create({
           return true;
         },
     };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("indent-preserve-on-list-create"),
+        appendTransaction(transactions, oldState, newState) {
+          if (!transactions.some((tr) => tr.docChanged)) return null;
+
+          const newTr = newState.tr;
+          let modified = false;
+
+          newState.doc.descendants((newNode, pos) => {
+            const typeName = newNode.type.name;
+            if (typeName !== "bulletList" && typeName !== "orderedList") return true;
+            if ((newNode.attrs.indent || 0) > 0) return true;
+
+            try {
+              const oldNode = oldState.doc.nodeAt(pos);
+              if (
+                oldNode &&
+                (oldNode.type.name === "paragraph" || oldNode.type.name === "heading") &&
+                (oldNode.attrs.indent || 0) > 0
+              ) {
+                newTr.setNodeMarkup(pos, undefined, {
+                  ...newNode.attrs,
+                  indent: oldNode.attrs.indent,
+                });
+                modified = true;
+              }
+            } catch {
+              // position didn't exist in old state
+            }
+
+            return true;
+          });
+
+          return modified ? newTr : null;
+        },
+      }),
+    ];
   },
 
   addKeyboardShortcuts() {

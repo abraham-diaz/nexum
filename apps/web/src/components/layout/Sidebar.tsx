@@ -82,7 +82,7 @@ const Sidebar = ({ collapsed, onToggle, onSearchClick }: SidebarProps) => {
             <Search size={14} />
             <span className="flex-1 text-left">Buscar…</span>
             <kbd className="text-[10px] border border-border rounded px-1 py-0.5 text-muted-foreground/50">
-              ⌘K
+              Ctrl+K
             </kbd>
           </button>
         )}

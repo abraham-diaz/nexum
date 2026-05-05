@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import SearchDialog from "@/components/SearchDialog";
+import { useTheme } from "@/hooks/use-theme";
 
 const Layout = () => {
+  useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 

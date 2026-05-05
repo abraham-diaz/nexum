@@ -5,6 +5,7 @@ import Projects from "@/pages/Projects";
 import ProjectView from "@/pages/ProjectView";
 import DatabaseView from "@/pages/DatabaseView";
 import DocumentView from "@/pages/DocumentView";
+import Settings from "@/pages/Settings";
 import Login from "@/pages/Login";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: "documents/:id",
         element: <DocumentView />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
       },
     ],
   },

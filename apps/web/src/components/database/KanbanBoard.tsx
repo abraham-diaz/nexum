@@ -266,13 +266,25 @@ function DetailTextField({
 }) {
   const [draft, setDraft] = useState(value);
 
+  // Keep a ref always pointing to the latest commit logic so the unmount
+  // effect can save even when the dialog closes before blur fires.
+  const commitRef = useRef<() => void>();
+  useEffect(() => {
+    commitRef.current = () => {
+      const normalized = multiline ? draft : draft.trim();
+      if (normalized !== value) onSave(normalized);
+    };
+  });
+
   useEffect(() => {
     setDraft(value);
   }, [value]);
 
-  const commit = () => {
-    if (draft.trim() !== value) onSave(draft.trim());
-  };
+  useEffect(() => {
+    return () => commitRef.current?.();
+  }, []);
+
+  const commit = () => commitRef.current?.();
 
   return (
     <div className="space-y-1.5">
@@ -392,6 +404,34 @@ function DetailDateField({
   );
 }
 
+function DescriptionPreview({ text }: { text: string }) {
+  const lines = text.split("\n").filter((l) => l.trim()).slice(0, 5);
+  const hasList = lines.some((l) => /^[-*]\s/.test(l));
+
+  if (!hasList) {
+    return (
+      <p className="text-xs text-muted-foreground whitespace-pre-line line-clamp-4 px-1">
+        {text}
+      </p>
+    );
+  }
+
+  return (
+    <div className="text-xs text-muted-foreground px-1 space-y-0.5">
+      {lines.map((line, i) =>
+        /^[-*]\s/.test(line) ? (
+          <div key={i} className="flex gap-1.5 items-start">
+            <span className="shrink-0 mt-px">•</span>
+            <span>{line.replace(/^[-*]\s+/, "")}</span>
+          </div>
+        ) : (
+          <div key={i}>{line}</div>
+        )
+      )}
+    </div>
+  );
+}
+
 // --- Sortable Card ---
 
 const SortableCard = memo(function SortableCard({
@@ -484,11 +524,7 @@ const SortableCard = memo(function SortableCard({
       </div>
 
       {/* Description preview */}
-      {description && (
-        <p className="text-xs text-muted-foreground line-clamp-4 px-1">
-          {description}
-        </p>
-      )}
+      {description && <DescriptionPreview text={description} />}
 
       {/* Badges, numbers & dates */}
       {(badgeProps.length > 0 ||

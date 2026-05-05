@@ -262,10 +262,21 @@ export function getRows(databaseId: string) {
 
 export function createProperty(
   databaseId: string,
-  data: { name: string; type: Property["type"] }
+  data: { name: string; type: Property["type"]; relationDatabaseId?: string }
 ) {
   return request<Property>(`/databases/${databaseId}/properties`, {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateProperty(
+  databaseId: string,
+  id: string,
+  data: { name?: string; order?: number; config?: unknown }
+) {
+  return request<Property>(`/databases/${databaseId}/properties/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }

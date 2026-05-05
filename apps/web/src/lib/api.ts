@@ -262,7 +262,7 @@ export function getRows(databaseId: string) {
 
 export function createProperty(
   databaseId: string,
-  data: { name: string; type: Property["type"] }
+  data: { name: string; type: Property["type"]; relationDatabaseId?: string }
 ) {
   return request<Property>(`/databases/${databaseId}/properties`, {
     method: "POST",

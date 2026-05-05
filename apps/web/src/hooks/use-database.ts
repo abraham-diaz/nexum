@@ -22,8 +22,11 @@ export function useRows(databaseId: string) {
 export function useCreateProperty(databaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; type: api.Property["type"] }) =>
-      api.createProperty(databaseId, data),
+    mutationFn: (data: {
+      name: string;
+      type: api.Property["type"];
+      relationDatabaseId?: string;
+    }) => api.createProperty(databaseId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["databases", databaseId] });
       queryClient.invalidateQueries({

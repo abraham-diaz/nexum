@@ -58,7 +58,7 @@ import {
   useUpsertCell,
   useReorderRows,
 } from "@/hooks/use-database";
-import { useUpdateViewType } from "@/hooks/use-databases";
+import { useUpdateViewType, useDatabases } from "@/hooks/use-databases";
 import KanbanBoard from "@/components/database/KanbanBoard";
 import { useRecentItems } from "@/hooks/use-recent";
 import type { Property, Row } from "@/lib/api";
@@ -189,6 +189,52 @@ const EditableCell = memo(function EditableCell({
   );
 });
 
+const RelationCell = memo(function RelationCell({
+  value,
+  relationDatabaseId,
+  onSave,
+}: {
+  value: unknown;
+  relationDatabaseId: string;
+  onSave: (value: string | null) => void;
+}) {
+  const { data: relatedRows } = useRows(relationDatabaseId);
+
+  const getRowLabel = (row: Row): string => {
+    const firstTextCell = row.cells.find((c) => c.property.type === "TEXT");
+    return firstTextCell?.value ? String(firstTextCell.value) : `Fila #${row.order + 1}`;
+  };
+
+  const current = value ? String(value) : "";
+  const selectedRow = relatedRows?.find((r) => r.id === current);
+  const sortedRows = useMemo(
+    () => [...(relatedRows ?? [])].sort((a, b) => a.order - b.order),
+    [relatedRows]
+  );
+
+  return (
+    <div className="min-h-8 px-1 py-1">
+      <select
+        className="h-7 w-full rounded border-none bg-background text-foreground text-sm focus:ring-1 focus:ring-ring outline-none px-1"
+        value={current}
+        onChange={(e) => onSave(e.target.value || null)}
+      >
+        <option value="">—</option>
+        {sortedRows.map((row) => (
+          <option key={row.id} value={row.id}>
+            {getRowLabel(row)}
+          </option>
+        ))}
+      </select>
+      {selectedRow && (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5 bg-violet-500/15 text-violet-400">
+          {getRowLabel(selectedRow)}
+        </span>
+      )}
+    </div>
+  );
+});
+
 const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   TEXT: "Texto",
@@ -267,6 +313,12 @@ const SortableRow = memo(function SortableRow({
               value={cellByPropertyId.get(prop.id) ?? null}
               onSave={(value) => onUpsertCell(row.id, prop.id, value)}
             />
+          ) : prop.type === "RELATION" && prop.relationDatabaseId ? (
+            <RelationCell
+              value={cellByPropertyId.get(prop.id) ?? null}
+              relationDatabaseId={prop.relationDatabaseId}
+              onSave={(value) => onUpsertCell(row.id, prop.id, value)}
+            />
           ) : (
             <EditableCell
               value={cellByPropertyId.get(prop.id) ?? null}
@@ -317,9 +369,12 @@ export default function DatabaseView() {
     }
   }, [database?.id, database?.name]);
 
+  const { data: allDatabases } = useDatabases();
+
   const [addColOpen, setAddColOpen] = useState(false);
   const [colName, setColName] = useState("");
   const [colType, setColType] = useState<Property["type"]>("TEXT");
+  const [colRelationDatabaseId, setColRelationDatabaseId] = useState("");
 
   const [editingProp, setEditingProp] = useState<Property | null>(null);
   const [editOptions, setEditOptions] = useState<string[]>([]);
@@ -664,6 +719,7 @@ export default function DatabaseView() {
           if (!open) {
             setColName("");
             setColType("TEXT");
+            setColRelationDatabaseId("");
           }
         }}
       >
@@ -678,13 +734,21 @@ export default function DatabaseView() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!colName.trim()) return;
+              if (colType === "RELATION" && !colRelationDatabaseId) return;
               createProperty.mutate(
-                { name: colName.trim(), type: colType },
+                {
+                  name: colName.trim(),
+                  type: colType,
+                  ...(colType === "RELATION" && colRelationDatabaseId
+                    ? { relationDatabaseId: colRelationDatabaseId }
+                    : {}),
+                },
                 {
                   onSuccess: () => {
                     setAddColOpen(false);
                     setColName("");
                     setColType("TEXT");
+                    setColRelationDatabaseId("");
                   },
                 }
               );
@@ -700,9 +764,10 @@ export default function DatabaseView() {
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={colType}
-                onChange={(e) =>
-                  setColType(e.target.value as Property["type"])
-                }
+                onChange={(e) => {
+                  setColType(e.target.value as Property["type"]);
+                  setColRelationDatabaseId("");
+                }}
               >
                 {PROPERTY_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -710,6 +775,22 @@ export default function DatabaseView() {
                   </option>
                 ))}
               </select>
+              {colType === "RELATION" && (
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={colRelationDatabaseId}
+                  onChange={(e) => setColRelationDatabaseId(e.target.value)}
+                >
+                  <option value="">Selecciona una base de datos…</option>
+                  {(allDatabases ?? [])
+                    .filter((db) => db.id !== id)
+                    .map((db) => (
+                      <option key={db.id} value={db.id}>
+                        {db.name}
+                      </option>
+                    ))}
+                </select>
+              )}
             </div>
             <DialogFooter className="mt-4">
               <DialogClose asChild>
@@ -719,7 +800,11 @@ export default function DatabaseView() {
               </DialogClose>
               <Button
                 type="submit"
-                disabled={!colName.trim() || createProperty.isPending}
+                disabled={
+                  !colName.trim() ||
+                  (colType === "RELATION" && !colRelationDatabaseId) ||
+                  createProperty.isPending
+                }
               >
                 {createProperty.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

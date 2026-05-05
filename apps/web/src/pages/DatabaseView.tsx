@@ -24,6 +24,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
@@ -58,7 +59,7 @@ import {
   useUpsertCell,
   useReorderRows,
 } from "@/hooks/use-database";
-import { useUpdateViewType, useDatabases } from "@/hooks/use-databases";
+import { useUpdateViewType, useUpdateDatabase, useDatabases } from "@/hooks/use-databases";
 import KanbanBoard from "@/components/database/KanbanBoard";
 import { useRecentItems } from "@/hooks/use-recent";
 import type { Property, Row } from "@/lib/api";
@@ -332,6 +333,63 @@ const SortableRow = memo(function SortableRow({
   );
 });
 
+const SortableColumnHead = memo(function SortableColumnHead({
+  prop,
+  onEditOptions,
+  onDelete,
+}: {
+  prop: Property;
+  onEditOptions: (prop: Property) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: prop.id });
+
+  return (
+    <TableHead
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className="min-w-37.5 group/head"
+    >
+      <div className="flex items-center gap-1">
+        <button
+          className="cursor-grab opacity-0 group-hover/head:opacity-100 shrink-0 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3 w-3 text-muted-foreground" />
+        </button>
+        <span className="truncate flex-1 text-sm font-medium">{prop.name}</span>
+        <span className="text-[10px] text-muted-foreground font-normal uppercase shrink-0">
+          {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type}
+        </span>
+        {prop.type === "SELECT" && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
+            onClick={() => onEditOptions(prop)}
+          >
+            <Settings2 className="h-3 w-3" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
+          onClick={() => onDelete(prop.id)}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </TableHead>
+  );
+});
+
 export default function DatabaseView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -351,6 +409,7 @@ export default function DatabaseView() {
   const upsertCell = useUpsertCell(id!);
   const reorderRows = useReorderRows(id!);
   const updateViewType = useUpdateViewType();
+  const updateDatabase = useUpdateDatabase();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -376,6 +435,9 @@ export default function DatabaseView() {
   const [colType, setColType] = useState<Property["type"]>("TEXT");
   const [colRelationDatabaseId, setColRelationDatabaseId] = useState("");
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+
   const [editingProp, setEditingProp] = useState<Property | null>(null);
   const [editOptions, setEditOptions] = useState<string[]>([]);
   const [newOption, setNewOption] = useState("");
@@ -385,6 +447,15 @@ export default function DatabaseView() {
     [rows]
   );
   const sortedRowIds = useMemo(() => sortedRows.map((r) => r.id), [sortedRows]);
+
+  const sortedProperties = useMemo(
+    () => [...(database?.properties ?? [])].sort((a, b) => a.order - b.order),
+    [database?.properties]
+  );
+  const sortedPropertyIds = useMemo(
+    () => sortedProperties.map((p) => p.id),
+    [sortedProperties]
+  );
 
   const handleDeleteRow = useCallback(
     (rowId: string) => deleteRow.mutate(rowId),
@@ -433,6 +504,21 @@ export default function DatabaseView() {
     reorderRows.mutate(newOrder);
   };
 
+  const handleColumnDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = sortedPropertyIds.indexOf(active.id as string);
+    const newIndex = sortedPropertyIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(sortedPropertyIds, oldIndex, newIndex);
+    reordered.forEach((propId, idx) => {
+      const prop = sortedProperties.find((p) => p.id === propId);
+      if (prop && prop.order !== idx) {
+        updateProperty.mutate({ id: propId, order: idx });
+      }
+    });
+  };
+
   // Find first SELECT property for kanban grouping
   const groupByProperty = properties.find((p) => p.type === "SELECT");
   const canShowBoard = !!groupByProperty;
@@ -450,9 +536,37 @@ export default function DatabaseView() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {database.name}
-          </h1>
+          {editingName ? (
+            <Input
+              className="text-2xl font-bold h-auto py-0 px-1 border-none shadow-none focus-visible:ring-1 w-64"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={() => {
+                const trimmed = nameDraft.trim();
+                if (trimmed && trimmed !== database.name) {
+                  updateDatabase.mutate({ id: id!, name: trimmed });
+                }
+                setEditingName(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") {
+                  setEditingName(false);
+                }
+              }}
+              autoFocus
+            />
+          ) : (
+            <h1
+              className="text-2xl font-bold tracking-tight cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1"
+              onClick={() => {
+                setNameDraft(database.name);
+                setEditingName(true);
+              }}
+            >
+              {database.name}
+            </h1>
+          )}
         </div>
         {canShowBoard && (
           <div className="flex items-center border rounded-md">
@@ -510,62 +624,53 @@ export default function DatabaseView() {
           isCreating={createRow.isPending}
         />
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  {properties.map((prop) => (
-                    <TableHead key={prop.id} className="min-w-37.5 group/head">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{prop.name}</span>
-                        <span className="text-[10px] text-muted-foreground font-normal uppercase">
-                          {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type}
-                        </span>
-                        {prop.type === "SELECT" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
-                            onClick={() => {
-                              const opts = (prop.config as { options?: string[] })?.options ?? [];
-                              setEditingProp(prop);
-                              setEditOptions(opts);
-                              setNewOption("");
-                            }}
-                          >
-                            <Settings2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
-                          onClick={() => deleteProperty.mutate(prop.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+        <div className="rounded-md border overflow-auto">
+          <Table>
+            <TableHeader>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleColumnDragEnd}
+              >
+                <SortableContext
+                  items={sortedPropertyIds}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    {sortedProperties.map((prop) => (
+                      <SortableColumnHead
+                        key={prop.id}
+                        prop={prop}
+                        onEditOptions={(p) => {
+                          const opts = (p.config as { options?: string[] })?.options ?? [];
+                          setEditingProp(p);
+                          setEditOptions(opts);
+                          setNewOption("");
+                        }}
+                        onDelete={(propId) => deleteProperty.mutate(propId)}
+                      />
+                    ))}
+                    <TableHead className="w-10">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setAddColOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </TableHead>
-                  ))}
-                  <TableHead className="w-10">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => setAddColOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                  </TableRow>
+                </SortableContext>
+              </DndContext>
+            </TableHeader>
+            <TableBody>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
                 <SortableContext
                   items={sortedRowIds}
                   strategy={verticalListSortingStrategy}
@@ -575,7 +680,7 @@ export default function DatabaseView() {
                       key={row.id}
                       row={row}
                       idx={idx}
-                      properties={properties}
+                      properties={sortedProperties}
                       onDelete={handleDeleteRow}
                       onUpsertCell={handleUpsertCell}
                     />
@@ -583,7 +688,7 @@ export default function DatabaseView() {
                 </SortableContext>
                 {/* Add row button */}
                 <TableRow>
-                  <TableCell colSpan={properties.length + 2}>
+                  <TableCell colSpan={sortedProperties.length + 2}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -600,10 +705,10 @@ export default function DatabaseView() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </DndContext>
+              </DndContext>
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {/* Edit SELECT Options Dialog */}

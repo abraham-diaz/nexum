@@ -9,6 +9,8 @@ import {
   TableProperties,
   KanbanSquare,
   GripVertical,
+  Settings2,
+  X,
 } from "lucide-react";
 import {
   DndContext,
@@ -49,6 +51,7 @@ import {
   useDatabase,
   useRows,
   useCreateProperty,
+  useUpdateProperty,
   useDeleteProperty,
   useCreateRow,
   useDeleteRow,
@@ -289,6 +292,7 @@ export default function DatabaseView() {
   const { data: rows, isLoading: rowsLoading } = useRows(id!);
 
   const createProperty = useCreateProperty(id!);
+  const updateProperty = useUpdateProperty(id!);
   const deleteProperty = useDeleteProperty(id!);
   const createRow = useCreateRow(id!);
   const deleteRow = useDeleteRow(id!);
@@ -316,6 +320,10 @@ export default function DatabaseView() {
   const [addColOpen, setAddColOpen] = useState(false);
   const [colName, setColName] = useState("");
   const [colType, setColType] = useState<Property["type"]>("TEXT");
+
+  const [editingProp, setEditingProp] = useState<Property | null>(null);
+  const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState("");
 
   const sortedRows = useMemo(
     () => [...(rows ?? [])].sort((a, b) => a.order - b.order),
@@ -458,12 +466,27 @@ export default function DatabaseView() {
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   {properties.map((prop) => (
-                    <TableHead key={prop.id} className="min-w-37.5">
+                    <TableHead key={prop.id} className="min-w-37.5 group/head">
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate">{prop.name}</span>
                         <span className="text-[10px] text-muted-foreground font-normal uppercase">
                           {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type}
                         </span>
+                        {prop.type === "SELECT" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover/head:opacity-100 shrink-0"
+                            onClick={() => {
+                              const opts = (prop.config as { options?: string[] })?.options ?? [];
+                              setEditingProp(prop);
+                              setEditOptions(opts);
+                              setNewOption("");
+                            }}
+                          >
+                            <Settings2 className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -527,6 +550,111 @@ export default function DatabaseView() {
           </div>
         </DndContext>
       )}
+
+      {/* Edit SELECT Options Dialog */}
+      <Dialog
+        open={!!editingProp}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingProp(null);
+            setEditOptions([]);
+            setNewOption("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Opciones de "{editingProp?.name}"</DialogTitle>
+            <DialogDescription>
+              Añade o elimina las opciones disponibles para esta columna.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5 max-h-52 overflow-y-auto">
+              {editOptions.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Sin opciones todavía.
+                </p>
+              )}
+              {editOptions.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="flex-1 text-sm px-2 py-1 rounded bg-muted truncate">
+                    {opt}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() =>
+                      setEditOptions(editOptions.filter((_, j) => j !== i))
+                    }
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Nueva opción…"
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const trimmed = newOption.trim();
+                    if (trimmed && !editOptions.includes(trimmed)) {
+                      setEditOptions([...editOptions, trimmed]);
+                      setNewOption("");
+                    }
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const trimmed = newOption.trim();
+                  if (trimmed && !editOptions.includes(trimmed)) {
+                    setEditOptions([...editOptions, trimmed]);
+                    setNewOption("");
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                if (!editingProp) return;
+                updateProperty.mutate(
+                  { id: editingProp.id, config: { options: editOptions } },
+                  {
+                    onSuccess: () => {
+                      setEditingProp(null);
+                      setEditOptions([]);
+                      setNewOption("");
+                    },
+                  }
+                );
+              }}
+              disabled={updateProperty.isPending}
+            >
+              {updateProperty.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Column Dialog */}
       <Dialog

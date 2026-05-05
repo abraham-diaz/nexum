@@ -33,6 +33,24 @@ export function useCreateProperty(databaseId: string) {
   });
 }
 
+export function useUpdateProperty(databaseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: string;
+      name?: string;
+      order?: number;
+      config?: unknown;
+    }) => api.updateProperty(databaseId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["databases", databaseId] });
+    },
+  });
+}
+
 export function useDeleteProperty(databaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -270,6 +270,17 @@ export function createProperty(
   });
 }
 
+export function updateProperty(
+  databaseId: string,
+  id: string,
+  data: { name?: string; order?: number; config?: unknown }
+) {
+  return request<Property>(`/databases/${databaseId}/properties/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
 export function deleteProperty(databaseId: string, id: string) {
   return request<void>(`/databases/${databaseId}/properties/${id}`, {
     method: "DELETE",

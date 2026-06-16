@@ -6,12 +6,14 @@ import {
   Trash2,
   Database,
   FolderKanban,
+  FolderInput,
   FileText,
   Loader2,
   ArrowLeft,
   KanbanSquare,
   Table2,
 } from "lucide-react";
+import MoveProjectDialog from "@/components/projects/MoveProjectDialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -296,6 +298,8 @@ export default function ProjectView() {
   const [createSubOpen, setCreateSubOpen] = useState(false);
   const [editSubTarget, setEditSubTarget] = useState<Project | null>(null);
   const [deleteSubTarget, setDeleteSubTarget] = useState<Project | null>(null);
+  const [moveSubTarget, setMoveSubTarget] = useState<Project | null>(null);
+  const [moveCurrentOpen, setMoveCurrentOpen] = useState(false);
 
   const [createDbOpen, setCreateDbOpen] = useState(false);
   const [editDbTarget, setEditDbTarget] = useState<DatabaseType | null>(null);
@@ -345,6 +349,10 @@ export default function ProjectView() {
           <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setMoveCurrentOpen(true)}>
+            <FolderInput className="mr-2 h-4 w-4" />
+            Mover
+          </Button>
           {canCreateSub && (
             <Button variant="outline" onClick={() => setCreateSubOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -428,6 +436,13 @@ export default function ProjectView() {
                       className="flex gap-1"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMoveSubTarget(child)}
+                      >
+                        <FolderInput className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -558,6 +573,25 @@ export default function ProjectView() {
           </div>
         </div>
       )}
+
+      {/* --- Move dialogs --- */}
+      <MoveProjectDialog
+        open={moveCurrentOpen}
+        onOpenChange={setMoveCurrentOpen}
+        project={{ id: project.id, name: project.name, parentId: project.parentId }}
+      />
+
+      <MoveProjectDialog
+        open={!!moveSubTarget}
+        onOpenChange={(open) => {
+          if (!open) setMoveSubTarget(null);
+        }}
+        project={
+          moveSubTarget
+            ? { id: moveSubTarget.id, name: moveSubTarget.name, parentId: moveSubTarget.parentId }
+            : null
+        }
+      />
 
       {/* --- Dialogs: Sub-projects --- */}
       <NameFormDialog

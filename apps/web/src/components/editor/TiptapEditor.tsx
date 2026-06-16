@@ -1,3 +1,4 @@
+import { forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -12,6 +13,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Highlight } from "@tiptap/extension-highlight";
 import { TaskList } from "@tiptap/extension-task-list";
 import { TaskItem } from "@tiptap/extension-task-item";
+import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { Indent } from "./indent-extension";
 import SlashCommands from "./slash-commands";
 import {
@@ -51,6 +53,10 @@ interface TiptapEditorProps {
   onUpdate: (content: unknown) => void;
 }
 
+export interface TiptapEditorHandle {
+  getMarkdown: () => string;
+}
+
 const TEXT_COLORS = [
   { name: "Default", value: "" },
   { name: "Gris", value: "#9ca3af" },
@@ -75,7 +81,10 @@ const HIGHLIGHT_COLORS = [
   { name: "Rosa", value: "#fbcfe8" },
 ];
 
-export default function TiptapEditor({ content, onUpdate }: TiptapEditorProps) {
+const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(function TiptapEditor(
+  { content, onUpdate },
+  ref
+) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -93,6 +102,12 @@ export default function TiptapEditor({ content, onUpdate }: TiptapEditorProps) {
       TaskItem.configure({ nested: true }),
       Indent,
       SlashCommands,
+      Markdown.configure({
+        html: true,
+        tightLists: true,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
     ],
     content: content as any,
     onUpdate: ({ editor }) => {
@@ -104,6 +119,16 @@ export default function TiptapEditor({ content, onUpdate }: TiptapEditorProps) {
       },
     },
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getMarkdown: () =>
+        (editor?.storage as { markdown?: MarkdownStorage } | undefined)?.markdown?.getMarkdown() ??
+        "",
+    }),
+    [editor]
+  );
 
   if (!editor) return null;
 
@@ -393,4 +418,6 @@ export default function TiptapEditor({ content, onUpdate }: TiptapEditorProps) {
       <EditorContent editor={editor} />
     </div>
   );
-}
+});
+
+export default TiptapEditor;

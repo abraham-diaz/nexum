@@ -7,6 +7,7 @@ router.get('/', controller.list);
 router.get('/:id', controller.getById);
 router.post('/', controller.create);
 router.patch('/:id', controller.update);
+router.patch('/:id/move', controller.move);
 router.delete('/:id', controller.remove);
 
 export default router;

@@ -20,6 +20,16 @@ export function useProject(id: string) {
   });
 }
 
+// Lists the direct children of a project (or root projects when parentId is null).
+// Used by the move-project folder picker to browse the project tree.
+export function useProjectChildren(parentId: string | null) {
+  return useQuery({
+    queryKey: ["projects", "children", parentId ?? "root"],
+    queryFn: () => api.getProjects(parentId ?? undefined),
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -42,6 +52,15 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deleteProject(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PROJECTS_KEY }),
+  });
+}
+
+export function useMoveProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, parentId }: { id: string; parentId: string | null }) =>
+      api.moveProject(id, parentId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: PROJECTS_KEY }),
   });
 }

@@ -55,6 +55,7 @@ interface TiptapEditorProps {
 
 export interface TiptapEditorHandle {
   getMarkdown: () => string;
+  setMarkdown: (markdown: string) => void;
 }
 
 const TEXT_COLORS = [
@@ -126,6 +127,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(function 
       getMarkdown: () =>
         (editor?.storage as { markdown?: MarkdownStorage } | undefined)?.markdown?.getMarkdown() ??
         "",
+      setMarkdown: (markdown: string) => {
+        editor?.commands.setContent(markdown);
+      },
     }),
     [editor]
   );

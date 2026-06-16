@@ -1,8 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Check, Download } from "lucide-react";
+import { ArrowLeft, Loader2, Check, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import TiptapEditor, { type TiptapEditorHandle } from "@/components/editor/TiptapEditor";
 import { useDocument, useUpdateDocument } from "@/hooks/use-documents";
 import { useRecentItems } from "@/hooks/use-recent";
@@ -18,7 +27,12 @@ export default function DocumentView() {
   const [saved, setSaved] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<TiptapEditorHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const [pendingImport, setPendingImport] = useState<{ name: string; markdown: string } | null>(
+    null
+  );
 
   const { addItem: addRecent } = useRecentItems();
 
@@ -74,6 +88,24 @@ export default function DocumentView() {
     a.download = `${(doc?.title || "documento").trim()}.md`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingImport({ name: file.name, markdown: String(reader.result ?? "") });
+    };
+    reader.readAsText(file, "utf-8");
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    editorRef.current?.setMarkdown(pendingImport.markdown);
+    setPendingImport(null);
   };
 
   if (isLoading) {
@@ -132,10 +164,26 @@ export default function DocumentView() {
           </span>
         )}
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md,.markdown,text/markdown,text/plain"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
         <Button
           variant="ghost"
           size="sm"
           className="ml-auto gap-1.5"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="h-4 w-4" />
+          Importar .md
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1.5"
           onClick={exportMarkdown}
         >
           <Download className="h-4 w-4" />
@@ -147,6 +195,30 @@ export default function DocumentView() {
       <div className="document-light rounded-lg p-6 shadow-sm flex-1 min-h-0 overflow-y-auto">
         <TiptapEditor ref={editorRef} content={doc.content} onUpdate={saveContent} />
       </div>
+
+      {/* Import confirmation */}
+      <Dialog
+        open={!!pendingImport}
+        onOpenChange={(open) => {
+          if (!open) setPendingImport(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importar Markdown</DialogTitle>
+            <DialogDescription>
+              Esto reemplazará todo el contenido actual del documento por el de{" "}
+              <strong>{pendingImport?.name}</strong>. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button onClick={confirmImport}>Importar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -210,6 +210,13 @@ export function deleteProject(id: string) {
   return request<void>(`/projects/${id}`, { method: "DELETE" });
 }
 
+export function moveProject(id: string, parentId: string | null) {
+  return request<Project>(`/projects/${id}/move`, {
+    method: "PATCH",
+    body: JSON.stringify({ parentId }),
+  });
+}
+
 // --- Databases ---
 
 export function getDatabases() {

@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import TiptapEditor from "@/components/editor/TiptapEditor";
+import TiptapEditor, { type TiptapEditorHandle } from "@/components/editor/TiptapEditor";
 import { useDocument, useUpdateDocument } from "@/hooks/use-documents";
 import { useRecentItems } from "@/hooks/use-recent";
 
@@ -17,6 +17,7 @@ export default function DocumentView() {
   const [titleValue, setTitleValue] = useState("");
   const [saved, setSaved] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<TiptapEditorHandle>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const { addItem: addRecent } = useRecentItems();
@@ -62,6 +63,17 @@ export default function DocumentView() {
     } else if (doc) {
       setTitleValue(doc.title);
     }
+  };
+
+  const exportMarkdown = () => {
+    const markdown = editorRef.current?.getMarkdown() ?? "";
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(doc?.title || "documento").trim()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
@@ -119,11 +131,21 @@ export default function DocumentView() {
             Saved
           </span>
         )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto gap-1.5"
+          onClick={exportMarkdown}
+        >
+          <Download className="h-4 w-4" />
+          Exportar .md
+        </Button>
       </div>
 
       {/* Editor */}
       <div className="document-light rounded-lg p-6 shadow-sm flex-1 min-h-0 overflow-y-auto">
-        <TiptapEditor content={doc.content} onUpdate={saveContent} />
+        <TiptapEditor ref={editorRef} content={doc.content} onUpdate={saveContent} />
       </div>
     </div>
   );

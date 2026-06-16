@@ -27,3 +27,12 @@ export const remove: RequestHandler = async (req, res) => {
   await projectsService.remove(req.params.id);
   res.status(204).end();
 };
+
+export const move: RequestHandler = async (req, res) => {
+  try {
+    const project = await projectsService.move(req.params.id, req.body.parentId ?? null);
+    res.json(project);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'No se pudo mover el proyecto.' });
+  }
+};

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, FolderKanban, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderInput, FolderKanban, Loader2 } from "lucide-react";
+import MoveProjectDialog from "@/components/projects/MoveProjectDialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -135,6 +136,7 @@ export default function Projects() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [moveTarget, setMoveTarget] = useState<Project | null>(null);
 
   if (isLoading) {
     return (
@@ -212,6 +214,13 @@ export default function Projects() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => setMoveTarget(project)}
+                    >
+                      <FolderInput className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setEditTarget(project)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -265,6 +274,14 @@ export default function Projects() {
           );
         }}
         isPending={updateMutation.isPending}
+      />
+
+      <MoveProjectDialog
+        open={!!moveTarget}
+        onOpenChange={(open) => {
+          if (!open) setMoveTarget(null);
+        }}
+        project={moveTarget}
       />
 
       <DeleteProjectDialog

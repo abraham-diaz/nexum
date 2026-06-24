@@ -1,10 +1,24 @@
+<div align="center">
+
 # Nexum
 
-Personal project management app with databases (table/kanban), rich-text documents, and nested projects. Built as a single-user self-hosted tool.
+### Self-hosted personal project management app
+
+![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white) ![pnpm](https://img.shields.io/badge/pnpm_workspaces-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
+
+</div>
+
+---
+
+## What is Nexum?
+
+Nexum is a single-user, self-hosted project management tool. It combines hierarchical projects, relational databases (table and Kanban), and rich-text documents in one app — think a lightweight personal Notion, running entirely on your own machine.
+
+---
 
 ## Features
 
-- **Nested projects** — organize projects in a hierarchical tree with sub-projects
+- **Nested projects** — organize work in a hierarchical tree with unlimited sub-projects
 - **Databases** — table view and Kanban board with drag & drop (dnd-kit)
 - **Typed properties** — Text, Number, Select, Date, and Relation between databases
 - **Documents** — rich text editor with Tiptap (auto-save with debounce)
@@ -13,12 +27,36 @@ Personal project management app with databases (table/kanban), rich-text documen
 - **PWA** — installable as a progressive web app (vite-plugin-pwa)
 - **Light/dark theme** — OKLCh color system with CSS custom properties
 
+---
+
 ## Tech Stack
 
-- **Frontend:** React 18 + Vite, Tailwind CSS v4, shadcn/ui (Radix + Lucide), React Query, Tiptap, dnd-kit
-- **Backend:** Express.js, Prisma ORM, PostgreSQL
-- **Auth:** JWT (access + refresh tokens)
-- **Monorepo:** pnpm workspaces
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 · Vite · Tailwind CSS v4 · shadcn/ui (Radix + Lucide) |
+| State & Data | React Query |
+| Rich text | Tiptap |
+| Drag & Drop | dnd-kit |
+| Backend | Express.js |
+| ORM | Prisma |
+| Database | PostgreSQL |
+| Auth | JWT (access + refresh tokens) |
+| Monorepo | pnpm workspaces |
+
+---
+
+## Data Model
+
+```
+Project (hierarchical tree)
+├─ Database (TABLE | BOARD)
+│  ├─ Property (TEXT, NUMBER, SELECT, DATE, RELATION)
+│  └─ Row
+│     └─ Cell (JSON value per property)
+└─ Document (Tiptap JSON content)
+```
+
+---
 
 ## Structure
 
@@ -27,7 +65,7 @@ nexum/
 ├─ apps/
 │  ├─ web/                  React + Vite frontend
 │  │  └─ src/
-│  │     ├─ pages/          Route-level components (Dashboard, Projects, DatabaseView, DocumentView)
+│  │     ├─ pages/          Route-level components
 │  │     ├─ components/
 │  │     │  ├─ ui/          shadcn/ui primitives
 │  │     │  ├─ layout/      Shell (Sidebar, Layout, ProtectedRoute)
@@ -41,23 +79,11 @@ nexum/
 │        ├─ controllers/    Request/response handling
 │        ├─ services/       Business logic + Prisma queries
 │        └─ middleware/     Auth middleware (JWT)
-├─ packages/
-│  └─ shared/               Shared types, schemas, Prisma models
-├─ package.json
-├─ pnpm-workspace.yaml
-└─ tsconfig.base.json
+└─ packages/
+   └─ shared/               Shared types, schemas, Prisma models
 ```
 
-## Data Model
-
-```
-Project (hierarchical tree)
-├─ Database (TABLE | BOARD)
-│  ├─ Property (TEXT, NUMBER, SELECT, DATE, RELATION)
-│  └─ Row
-│     └─ Cell (JSON value per property)
-└─ Document (Tiptap JSON content)
-```
+---
 
 ## Getting Started
 
@@ -69,41 +95,43 @@ Project (hierarchical tree)
 
 ### Setup
 
-1. **Install dependencies:**
+**1. Install dependencies:**
 
-   ```bash
-   pnpm install
-   ```
+```bash
+pnpm install
+```
 
-2. **Configure the database** — create `packages/shared/.env`:
+**2. Configure the database** — create `packages/shared/.env`:
 
-   ```
-   DATABASE_URL=postgresql://user:password@localhost:5432/nexum
-   ```
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/nexum
+```
 
-3. **Configure auth** — create `apps/api/.env`:
+**3. Configure auth** — create `apps/api/.env`:
 
-   ```
-   AUTH_USER=admin
-   AUTH_PASSWORD=your-password
-   JWT_SECRET=random-64-char-string
-   JWT_REFRESH_SECRET=another-random-64-char-string
-   DATABASE_URL=postgresql://user:password@localhost:5432/nexum
-   ```
+```env
+AUTH_USER=admin
+AUTH_PASSWORD=your-password
+JWT_SECRET=random-64-char-string
+JWT_REFRESH_SECRET=another-random-64-char-string
+DATABASE_URL=postgresql://user:password@localhost:5432/nexum
+```
 
-4. **Push the database schema:**
+**4. Push the database schema:**
 
-   ```bash
-   pnpm -w -F @nexum/shared db:push
-   ```
+```bash
+pnpm -w -F @nexum/shared db:push
+```
 
-5. **Start development:**
+**5. Start development:**
 
-   ```bash
-   pnpm dev
-   ```
+```bash
+pnpm dev
+```
 
-   Web runs on `http://localhost:5173`, API on `http://localhost:3000`.
+Web runs on `http://localhost:5173`, API on `http://localhost:3000`.
+
+---
 
 ## Production
 
@@ -116,10 +144,12 @@ PORT=4000 node apps/api/src/index.ts
 
 The API serves the built frontend statically and handles SPA routing fallback.
 
+---
+
 ## Commands
 
 | Command | Description |
-|---------|-------------|
+|---|---|
 | `pnpm dev` | Start all dev servers |
 | `pnpm build` | Build all packages |
 | `pnpm lint` | Lint all packages |
@@ -127,3 +157,9 @@ The API serves the built frontend statically and handles SPA routing fallback.
 | `pnpm -w -F @nexum/shared db:push` | Push schema to DB |
 | `pnpm -w -F @nexum/shared db:migrate` | Create and apply migration |
 | `pnpm -w -F @nexum/shared db:studio` | Open Prisma Studio |
+
+---
+
+## License
+
+MIT

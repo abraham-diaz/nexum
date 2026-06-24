@@ -1,4 +1,5 @@
 <div align="center">
+<img src="apps/web/public/icons/icon-192.png" alt="Nexum Logo" width="100"/>
 
 # Nexum
 

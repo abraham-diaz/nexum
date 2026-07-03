@@ -47,9 +47,13 @@ export function useUpdateProperty(databaseId: string) {
       name?: string;
       order?: number;
       config?: unknown;
+      renameMap?: { from: string; to: string }[];
     }) => api.updateProperty(databaseId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["databases", databaseId] });
+      queryClient.invalidateQueries({
+        queryKey: ["databases", databaseId, "rows"],
+      });
     },
   });
 }

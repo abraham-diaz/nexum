@@ -41,6 +41,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+  normalizeOptions,
+  getContrastText,
+  type SelectOption,
+} from "@/lib/select-options";
 
 function EditableTitle({
   value,
@@ -118,26 +123,6 @@ function getCellValue(row: Row, propertyId: string): unknown {
   return cell?.value ?? null;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  Pendiente: "bg-muted-foreground/20 text-muted-foreground",
-  "En progreso": "bg-blue-500/20 text-blue-400",
-  Hecho: "bg-green-500/20 text-green-400",
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  Baja: "bg-muted-foreground/15 text-muted-foreground",
-  Media: "bg-yellow-500/15 text-yellow-500",
-  Alta: "bg-red-500/15 text-red-500",
-};
-
-function getBadgeColor(value: string): string {
-  return (
-    STATUS_COLORS[value] ??
-    PRIORITY_COLORS[value] ??
-    "bg-muted-foreground/15 text-muted-foreground"
-  );
-}
-
 // --- Card Detail Dialog ---
 
 function CardDetailDialog({
@@ -206,14 +191,12 @@ function CardDetailDialog({
             }
 
             if (prop.type === "SELECT") {
-              const opts =
-                (prop.config as { options?: string[] })?.options ?? [];
               return (
                 <DetailSelectField
                   key={prop.id}
                   label={prop.name}
                   value={String(value ?? "")}
-                  options={opts}
+                  options={normalizeOptions(prop.config)}
                   onSave={(val) => onUpdateCell(row.id, prop.id, val || null)}
                 />
               );
@@ -357,9 +340,10 @@ function DetailSelectField({
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: SelectOption[];
   onSave: (value: string) => void;
 }) {
+  const match = options.find((o) => o.value === value);
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -372,11 +356,22 @@ function DetailSelectField({
       >
         <option value="">--</option>
         {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
+          <option key={opt.id} value={opt.value}>
+            {opt.value}
           </option>
         ))}
       </select>
+      {value && (
+        <span
+          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+          style={{
+            backgroundColor: match?.color ?? "#8590a2",
+            color: getContrastText(match?.color ?? "#8590a2"),
+          }}
+        >
+          {value}
+        </span>
+      )}
     </div>
   );
 }
@@ -534,10 +529,13 @@ const SortableCard = memo(function SortableCard({
           {badgeProps.map((bp) => {
             const val = String(cellByPropertyId.get(bp.id) ?? "");
             if (!val) return null;
+            const color =
+              normalizeOptions(bp.config).find((o) => o.value === val)?.color ?? "#8590a2";
             return (
               <span
                 key={bp.id}
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${getBadgeColor(val)}`}
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                style={{ backgroundColor: color, color: getContrastText(color) }}
               >
                 {val}
               </span>
@@ -622,8 +620,15 @@ export default function KanbanBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailRowId, setDetailRowId] = useState<string | null>(null);
 
-  const config = groupByProperty.config as { options?: string[] } | null;
-  const options = config?.options ?? [];
+  const selectOptions = useMemo(
+    () => normalizeOptions(groupByProperty.config),
+    [groupByProperty.config]
+  );
+  const options = useMemo(() => selectOptions.map((o) => o.value), [selectOptions]);
+  const colorByValue = useMemo(
+    () => new Map(selectOptions.map((o) => [o.value, o.color])),
+    [selectOptions]
+  );
   const columns = [...options, "__uncategorized__"];
 
   const groupedRows: Record<string, Row[]> = useMemo(() => {
@@ -796,6 +801,12 @@ export default function KanbanBoard({
                 {/* Column header */}
                 <div className="flex items-center justify-between px-3 py-2 border-b">
                   <div className="flex items-center gap-2">
+                    {!isUncategorized && (
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: colorByValue.get(col) ?? "#8590a2" }}
+                      />
+                    )}
                     <span className="text-sm font-medium">{label}</span>
                     <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
                       {colRows.length}

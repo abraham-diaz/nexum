@@ -49,6 +49,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  normalizeOptions,
+  LABEL_COLORS,
+  getContrastText,
+  nextLabelColor,
+  type SelectOption,
+} from "@/lib/select-options";
+import {
   useDatabase,
   useRows,
   useCreateProperty,
@@ -70,28 +82,12 @@ const SelectCell = memo(function SelectCell({
   onSave,
 }: {
   value: unknown;
-  options: string[];
+  options: SelectOption[];
   onSave: (value: string | null) => void;
 }) {
   const current = String(value ?? "");
-
-  const palette = [
-    "bg-blue-500/15 text-blue-400",
-    "bg-green-500/15 text-green-400",
-    "bg-yellow-500/15 text-yellow-400",
-    "bg-red-500/15 text-red-400",
-    "bg-purple-500/15 text-purple-400",
-    "bg-pink-500/15 text-pink-400",
-    "bg-cyan-500/15 text-cyan-400",
-    "bg-orange-500/15 text-orange-400",
-  ];
-  const colorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    options.forEach((opt, i) => {
-      map[opt] = palette[i % palette.length];
-    });
-    return map;
-  }, [options]);
+  const match = options.find((o) => o.value === current);
+  const color = match?.color ?? "#8590a2";
 
   return (
     <div className="min-h-8 px-1 py-1">
@@ -102,14 +98,15 @@ const SelectCell = memo(function SelectCell({
       >
         <option value="">—</option>
         {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
+          <option key={opt.id} value={opt.value}>
+            {opt.value}
           </option>
         ))}
       </select>
       {current && (
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5 ${colorMap[current] ?? palette[0]}`}
+          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5"
+          style={{ backgroundColor: color, color: getContrastText(color) }}
         >
           {current}
         </span>
@@ -301,12 +298,10 @@ const SortableRow = memo(function SortableRow({
       </TableCell>
       {properties.map((prop) => (
         <TableCell key={prop.id} className="p-0">
-          {prop.type === "SELECT" &&
-          prop.config &&
-          (prop.config as { options?: string[] }).options ? (
+          {prop.type === "SELECT" ? (
             <SelectCell
               value={cellByPropertyId.get(prop.id) ?? null}
-              options={(prop.config as { options: string[] }).options}
+              options={normalizeOptions(prop.config)}
               onSave={(value) => onUpsertCell(row.id, prop.id, value)}
             />
           ) : prop.type === "DATE" ? (
@@ -439,8 +434,27 @@ export default function DatabaseView() {
   const [nameDraft, setNameDraft] = useState("");
 
   const [editingProp, setEditingProp] = useState<Property | null>(null);
-  const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [editOptions, setEditOptions] = useState<SelectOption[]>([]);
+  const [originalOptions, setOriginalOptions] = useState<SelectOption[]>([]);
   const [newOption, setNewOption] = useState("");
+
+  const addOption = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || editOptions.some((o) => o.value === trimmed)) return;
+    setEditOptions([
+      ...editOptions,
+      { id: crypto.randomUUID(), value: trimmed, color: nextLabelColor(editOptions.length) },
+    ]);
+    setNewOption("");
+  };
+
+  const renameOption = (optId: string, value: string) => {
+    setEditOptions(editOptions.map((o) => (o.id === optId ? { ...o, value } : o)));
+  };
+
+  const setOptionColor = (optId: string, color: string) => {
+    setEditOptions(editOptions.map((o) => (o.id === optId ? { ...o, color } : o)));
+  };
 
   const sortedRows = useMemo(
     () => [...(rows ?? [])].sort((a, b) => a.order - b.order),
@@ -643,9 +657,10 @@ export default function DatabaseView() {
                         key={prop.id}
                         prop={prop}
                         onEditOptions={(p) => {
-                          const opts = (p.config as { options?: string[] })?.options ?? [];
+                          const opts = normalizeOptions(p.config);
                           setEditingProp(p);
                           setEditOptions(opts);
+                          setOriginalOptions(opts);
                           setNewOption("");
                         }}
                         onDelete={(propId) => deleteProperty.mutate(propId)}
@@ -718,35 +733,77 @@ export default function DatabaseView() {
           if (!open) {
             setEditingProp(null);
             setEditOptions([]);
+            setOriginalOptions([]);
             setNewOption("");
           }
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Opciones de "{editingProp?.name}"</DialogTitle>
+            <DialogTitle>Etiquetas de "{editingProp?.name}"</DialogTitle>
             <DialogDescription>
-              Añade o elimina las opciones disponibles para esta columna.
+              Añade, renombra, elimina y elige el color de cada etiqueta.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5 max-h-52 overflow-y-auto">
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {editOptions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Sin opciones todavía.
+                  Sin etiquetas todavía.
                 </p>
               )}
-              {editOptions.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="flex-1 text-sm px-2 py-1 rounded bg-muted truncate">
-                    {opt}
-                  </span>
+              {editOptions.map((opt) => (
+                <div key={opt.id} className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded-full border shrink-0"
+                        style={{ backgroundColor: opt.color }}
+                        aria-label="Elegir color"
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-3" align="start">
+                      <div className="grid grid-cols-5 gap-2 mb-3">
+                        {LABEL_COLORS.map((c) => (
+                          <button
+                            key={c.hex}
+                            type="button"
+                            title={c.name}
+                            className="h-7 w-7 rounded-full border-2"
+                            style={{
+                              backgroundColor: c.hex,
+                              borderColor:
+                                opt.color.toLowerCase() === c.hex.toLowerCase()
+                                  ? "var(--foreground)"
+                                  : "transparent",
+                            }}
+                            onClick={() => setOptionColor(opt.id, c.hex)}
+                          />
+                        ))}
+                      </div>
+                      <label className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                        Personalizado
+                        <input
+                          type="color"
+                          className="h-7 w-12 rounded border cursor-pointer bg-transparent"
+                          value={opt.color}
+                          onChange={(e) => setOptionColor(opt.id, e.target.value)}
+                        />
+                      </label>
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    className="flex-1 h-8"
+                    value={opt.value}
+                    onChange={(e) => renameOption(opt.id, e.target.value)}
+                  />
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 shrink-0"
                     onClick={() =>
-                      setEditOptions(editOptions.filter((_, j) => j !== i))
+                      setEditOptions(editOptions.filter((o) => o.id !== opt.id))
                     }
                   >
                     <X className="h-3 w-3" />
@@ -756,31 +813,17 @@ export default function DatabaseView() {
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="Nueva opción…"
+                placeholder="Nueva etiqueta…"
                 value={newOption}
                 onChange={(e) => setNewOption(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    const trimmed = newOption.trim();
-                    if (trimmed && !editOptions.includes(trimmed)) {
-                      setEditOptions([...editOptions, trimmed]);
-                      setNewOption("");
-                    }
+                    addOption(newOption);
                   }
                 }}
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  const trimmed = newOption.trim();
-                  if (trimmed && !editOptions.includes(trimmed)) {
-                    setEditOptions([...editOptions, trimmed]);
-                    setNewOption("");
-                  }
-                }}
-              >
+              <Button type="button" variant="outline" onClick={() => addOption(newOption)}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -794,12 +837,25 @@ export default function DatabaseView() {
             <Button
               onClick={() => {
                 if (!editingProp) return;
+                const cleaned = editOptions
+                  .map((o) => ({ ...o, value: o.value.trim() }))
+                  .filter((o) => o.value.length > 0);
+                const renameMap = cleaned
+                  .map((o) => {
+                    const original = originalOptions.find((orig) => orig.id === o.id);
+                    return original && original.value !== o.value
+                      ? { from: original.value, to: o.value }
+                      : null;
+                  })
+                  .filter((x): x is { from: string; to: string } => x !== null);
+
                 updateProperty.mutate(
-                  { id: editingProp.id, config: { options: editOptions } },
+                  { id: editingProp.id, config: { options: cleaned }, renameMap },
                   {
                     onSuccess: () => {
                       setEditingProp(null);
                       setEditOptions([]);
+                      setOriginalOptions([]);
                       setNewOption("");
                     },
                   }

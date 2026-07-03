@@ -26,13 +26,25 @@ export const DATABASE_TEMPLATES: DatabaseTemplate[] = [
         name: 'Estado',
         type: 'SELECT',
         order: 2,
-        config: { options: ['Pendiente', 'En progreso', 'Hecho'] },
+        config: {
+          options: [
+            { id: 'pendiente', value: 'Pendiente', color: '#8590a2' },
+            { id: 'en-progreso', value: 'En progreso', color: '#579dff' },
+            { id: 'hecho', value: 'Hecho', color: '#4bce97' },
+          ],
+        },
       },
       {
         name: 'Prioridad',
         type: 'SELECT',
         order: 3,
-        config: { options: ['Baja', 'Media', 'Alta'] },
+        config: {
+          options: [
+            { id: 'baja', value: 'Baja', color: '#8590a2' },
+            { id: 'media', value: 'Media', color: '#e2b203' },
+            { id: 'alta', value: 'Alta', color: '#f87462' },
+          ],
+        },
       },
       { name: 'Fecha inicio', type: 'DATE', order: 4 },
       { name: 'Fecha fin', type: 'DATE', order: 5 },

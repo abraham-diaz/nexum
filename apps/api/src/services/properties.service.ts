@@ -27,7 +27,26 @@ export function create(data: {
   });
 }
 
-export function update(id: string, data: { name?: string; order?: number; config?: unknown }) {
+export async function update(
+  id: string,
+  data: {
+    name?: string;
+    order?: number;
+    config?: unknown;
+    renameMap?: { from: string; to: string }[];
+  }
+) {
+  if (data.renameMap?.length) {
+    const cells = await prisma.cell.findMany({ where: { propertyId: id } });
+    for (const { from, to } of data.renameMap) {
+      if (from === to) continue;
+      const affected = cells.filter((c) => c.value === from);
+      await Promise.all(
+        affected.map((c) => prisma.cell.update({ where: { id: c.id }, data: { value: to } }))
+      );
+    }
+  }
+
   return prisma.property.update({
     where: { id },
     data: { name: data.name, order: data.order, config: data.config as any },

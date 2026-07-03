@@ -280,7 +280,12 @@ export function createProperty(
 export function updateProperty(
   databaseId: string,
   id: string,
-  data: { name?: string; order?: number; config?: unknown }
+  data: {
+    name?: string;
+    order?: number;
+    config?: unknown;
+    renameMap?: { from: string; to: string }[];
+  }
 ) {
   return request<Property>(`/databases/${databaseId}/properties/${id}`, {
     method: "PATCH",

@@ -20,8 +20,13 @@ export const create: RequestHandler = async (req, res) => {
 };
 
 export const update: RequestHandler = async (req, res) => {
-  const { name, order, config } = req.body;
-  const property = await propertiesService.update(req.params.id, { name, order, config });
+  const { name, order, config, renameMap } = req.body;
+  const property = await propertiesService.update(req.params.id, {
+    name,
+    order,
+    config,
+    renameMap,
+  });
   res.json(property);
 };
 

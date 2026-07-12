@@ -106,6 +106,7 @@ enum PropertyType {
   TEXT
   NUMBER
   SELECT
+  MULTI_SELECT
   DATE
   RELATION
 }

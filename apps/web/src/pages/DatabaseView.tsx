@@ -55,11 +55,13 @@ import {
 } from "@/components/ui/popover";
 import {
   normalizeOptions,
+  normalizeMultiValue,
   LABEL_COLORS,
   getContrastText,
   nextLabelColor,
   type SelectOption,
 } from "@/lib/select-options";
+import { LabelPicker } from "@/components/database/LabelPicker";
 import {
   useDatabase,
   useRows,
@@ -90,7 +92,7 @@ const SelectCell = memo(function SelectCell({
   const color = match?.color ?? "#8590a2";
 
   return (
-    <div className="min-h-8 px-1 py-1">
+    <div className="min-h-8 px-1 py-1 flex flex-col gap-1">
       <select
         className="h-7 w-full rounded border-none bg-background text-foreground text-sm focus:ring-1 focus:ring-ring outline-none px-1"
         value={current}
@@ -105,12 +107,67 @@ const SelectCell = memo(function SelectCell({
       </select>
       {current && (
         <span
-          className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5"
+          className="inline-flex items-center self-start rounded-full px-2 py-0.5 text-[11px] font-medium"
           style={{ backgroundColor: color, color: getContrastText(color) }}
         >
           {current}
         </span>
       )}
+    </div>
+  );
+});
+
+const MultiSelectCell = memo(function MultiSelectCell({
+  value,
+  options,
+  onSave,
+  onCreateOption,
+}: {
+  value: unknown;
+  options: SelectOption[];
+  onSave: (values: string[]) => void;
+  onCreateOption: (option: SelectOption) => void;
+}) {
+  const selected = normalizeMultiValue(value);
+
+  const toggle = (val: string) => {
+    onSave(selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val]);
+  };
+
+  const create = (name: string, color: string) => {
+    const option: SelectOption = { id: crypto.randomUUID(), value: name, color };
+    onCreateOption(option);
+    onSave([...selected, name]);
+  };
+
+  return (
+    <div className="min-h-8 px-1 py-1 flex flex-wrap gap-1 items-center">
+      {selected.map((val) => {
+        const opt = options.find((o) => o.value === val);
+        const color = opt?.color ?? "#8590a2";
+        return (
+          <span
+            key={val}
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+            style={{ backgroundColor: color, color: getContrastText(color) }}
+          >
+            {val}
+          </span>
+        );
+      })}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="h-5 w-5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground/60 flex items-center justify-center hover:bg-muted hover:text-foreground shrink-0"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-3" align="start">
+          <LabelPicker options={options} selected={selected} onToggle={toggle} onCreate={create} />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 });
@@ -211,7 +268,7 @@ const RelationCell = memo(function RelationCell({
   );
 
   return (
-    <div className="min-h-8 px-1 py-1">
+    <div className="min-h-8 px-1 py-1 flex flex-col gap-1">
       <select
         className="h-7 w-full rounded border-none bg-background text-foreground text-sm focus:ring-1 focus:ring-ring outline-none px-1"
         value={current}
@@ -225,7 +282,7 @@ const RelationCell = memo(function RelationCell({
         ))}
       </select>
       {selectedRow && (
-        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mt-0.5 bg-violet-500/15 text-violet-400">
+        <span className="inline-flex items-center self-start rounded-full px-2 py-0.5 text-[11px] font-medium bg-violet-500/15 text-violet-400">
           {getRowLabel(selectedRow)}
         </span>
       )}
@@ -233,11 +290,19 @@ const RelationCell = memo(function RelationCell({
   );
 });
 
-const PROPERTY_TYPES = ["TEXT", "NUMBER", "SELECT", "DATE", "RELATION"] as const;
+const PROPERTY_TYPES = [
+  "TEXT",
+  "NUMBER",
+  "SELECT",
+  "MULTI_SELECT",
+  "DATE",
+  "RELATION",
+] as const;
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   TEXT: "Texto",
   NUMBER: "Número",
   SELECT: "Selección",
+  MULTI_SELECT: "Etiquetas",
   DATE: "Fecha",
   RELATION: "Relación",
 };
@@ -248,12 +313,14 @@ const SortableRow = memo(function SortableRow({
   properties,
   onDelete,
   onUpsertCell,
+  onAddOption,
 }: {
   row: Row;
   idx: number;
   properties: Property[];
   onDelete: (id: string) => void;
   onUpsertCell: (rowId: string, propertyId: string, value: unknown) => void;
+  onAddOption: (propertyId: string, option: SelectOption) => void;
 }) {
   const {
     attributes,
@@ -303,6 +370,13 @@ const SortableRow = memo(function SortableRow({
               value={cellByPropertyId.get(prop.id) ?? null}
               options={normalizeOptions(prop.config)}
               onSave={(value) => onUpsertCell(row.id, prop.id, value)}
+            />
+          ) : prop.type === "MULTI_SELECT" ? (
+            <MultiSelectCell
+              value={cellByPropertyId.get(prop.id) ?? null}
+              options={normalizeOptions(prop.config)}
+              onSave={(values) => onUpsertCell(row.id, prop.id, values)}
+              onCreateOption={(option) => onAddOption(prop.id, option)}
             />
           ) : prop.type === "DATE" ? (
             <DateCell
@@ -362,7 +436,7 @@ const SortableColumnHead = memo(function SortableColumnHead({
         <span className="text-[10px] text-muted-foreground font-normal uppercase shrink-0">
           {PROPERTY_TYPE_LABELS[prop.type] ?? prop.type}
         </span>
-        {prop.type === "SELECT" && (
+        {(prop.type === "SELECT" || prop.type === "MULTI_SELECT") && (
           <Button
             variant="ghost"
             size="icon"
@@ -479,6 +553,16 @@ export default function DatabaseView() {
     (rowId: string, propertyId: string, value: unknown) =>
       upsertCell.mutate({ rowId, propertyId, value }),
     [upsertCell]
+  );
+  const handleAddOption = useCallback(
+    (propertyId: string, option: SelectOption) => {
+      const prop = sortedProperties.find((p) => p.id === propertyId);
+      if (!prop) return;
+      const opts = normalizeOptions(prop.config);
+      if (opts.some((o) => o.value === option.value)) return;
+      updateProperty.mutate({ id: propertyId, config: { options: [...opts, option] } });
+    },
+    [sortedProperties, updateProperty]
   );
 
   const isLoading = dbLoading || rowsLoading;
@@ -635,6 +719,7 @@ export default function DatabaseView() {
           }
           onDeleteRow={(rowId) => deleteRow.mutate(rowId)}
           onReorderRows={(orderedIds) => reorderRows.mutate(orderedIds)}
+          onAddOption={handleAddOption}
           isCreating={createRow.isPending}
         />
       ) : (
@@ -698,6 +783,7 @@ export default function DatabaseView() {
                       properties={sortedProperties}
                       onDelete={handleDeleteRow}
                       onUpsertCell={handleUpsertCell}
+                      onAddOption={handleAddOption}
                     />
                   ))}
                 </SortableContext>

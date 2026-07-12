@@ -38,13 +38,33 @@ export async function update(
 ) {
   if (data.renameMap?.length) {
     const cells = await prisma.cell.findMany({ where: { propertyId: id } });
-    for (const { from, to } of data.renameMap) {
-      if (from === to) continue;
-      const affected = cells.filter((c) => c.value === from);
-      await Promise.all(
-        affected.map((c) => prisma.cell.update({ where: { id: c.id }, data: { value: to } }))
-      );
+    const updates = new Map<string, unknown>();
+
+    for (const cell of cells) {
+      let value = cell.value;
+      let changed = false;
+
+      for (const { from, to } of data.renameMap) {
+        if (from === to) continue;
+        if (Array.isArray(value)) {
+          if (value.includes(from)) {
+            value = value.map((v) => (v === from ? to : v));
+            changed = true;
+          }
+        } else if (value === from) {
+          value = to;
+          changed = true;
+        }
+      }
+
+      if (changed) updates.set(cell.id, value);
     }
+
+    await Promise.all(
+      [...updates.entries()].map(([cellId, value]) =>
+        prisma.cell.update({ where: { id: cellId }, data: { value: value as any } })
+      )
+    );
   }
 
   return prisma.property.update({

@@ -43,9 +43,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   normalizeOptions,
+  normalizeMultiValue,
   getContrastText,
   type SelectOption,
 } from "@/lib/select-options";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { LabelPicker } from "@/components/database/LabelPicker";
 
 function EditableTitle({
   value,
@@ -115,6 +118,7 @@ interface KanbanBoardProps {
   onUpdateCell: (rowId: string, propertyId: string, value: unknown) => void;
   onDeleteRow: (rowId: string) => void;
   onReorderRows: (orderedIds: string[]) => void;
+  onAddOption: (propertyId: string, option: SelectOption) => void;
   isCreating: boolean;
 }
 
@@ -133,6 +137,7 @@ function CardDetailDialog({
   onOpenChange,
   onUpdateCell,
   onDeleteRow,
+  onAddOption,
 }: {
   row: Row;
   properties: Property[];
@@ -141,6 +146,7 @@ function CardDetailDialog({
   onOpenChange: (open: boolean) => void;
   onUpdateCell: (rowId: string, propertyId: string, value: unknown) => void;
   onDeleteRow: (rowId: string) => void;
+  onAddOption: (propertyId: string, option: SelectOption) => void;
 }) {
   const cellMap = useMemo(
     () => new Map(row.cells.map((c) => [c.propertyId, c.value] as const)),
@@ -198,6 +204,29 @@ function CardDetailDialog({
                   value={String(value ?? "")}
                   options={normalizeOptions(prop.config)}
                   onSave={(val) => onUpdateCell(row.id, prop.id, val || null)}
+                />
+              );
+            }
+
+            if (prop.type === "MULTI_SELECT") {
+              const opts = normalizeOptions(prop.config);
+              const selected = normalizeMultiValue(value);
+              return (
+                <DetailMultiSelectField
+                  key={prop.id}
+                  label={prop.name}
+                  options={opts}
+                  selected={selected}
+                  onToggle={(val) => {
+                    const next = selected.includes(val)
+                      ? selected.filter((v) => v !== val)
+                      : [...selected, val];
+                    onUpdateCell(row.id, prop.id, next);
+                  }}
+                  onCreate={(name, color) => {
+                    onAddOption(prop.id, { id: crypto.randomUUID(), value: name, color });
+                    onUpdateCell(row.id, prop.id, [...selected, name]);
+                  }}
                 />
               );
             }
@@ -376,6 +405,48 @@ function DetailSelectField({
   );
 }
 
+function DetailMultiSelectField({
+  label,
+  options,
+  selected,
+  onToggle,
+  onCreate,
+}: {
+  label: string;
+  options: SelectOption[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  onCreate: (name: string, color: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {label}
+      </label>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selected.map((val) => {
+            const opt = options.find((o) => o.value === val);
+            const color = opt?.color ?? "#8590a2";
+            return (
+              <span
+                key={val}
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                style={{ backgroundColor: color, color: getContrastText(color) }}
+              >
+                {val}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div className="rounded-md border p-2">
+        <LabelPicker options={options} selected={selected} onToggle={onToggle} onCreate={onCreate} />
+      </div>
+    </div>
+  );
+}
+
 function DetailDateField({
   label,
   value,
@@ -434,6 +505,7 @@ const SortableCard = memo(function SortableCard({
   titleProp,
   descriptionProp,
   badgeProps,
+  labelProps,
   dateProps,
   numberProps,
   groupByProperty,
@@ -441,11 +513,13 @@ const SortableCard = memo(function SortableCard({
   onUpdateCell,
   onDeleteRow,
   onOpenDetail,
+  onAddOption,
 }: {
   row: Row;
   titleProp: Property | undefined;
   descriptionProp: Property | undefined;
   badgeProps: Property[];
+  labelProps: Property[];
   dateProps: Property[];
   numberProps: Property[];
   groupByProperty: Property;
@@ -453,6 +527,7 @@ const SortableCard = memo(function SortableCard({
   onUpdateCell: (rowId: string, propertyId: string, value: unknown) => void;
   onDeleteRow: (rowId: string) => void;
   onOpenDetail: (rowId: string) => void;
+  onAddOption: (propertyId: string, option: SelectOption) => void;
 }) {
   const {
     attributes,
@@ -517,6 +592,60 @@ const SortableCard = memo(function SortableCard({
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
+
+      {/* Labels (multi-select tags) */}
+      {labelProps.length > 0 && (
+        <div className="flex flex-wrap gap-1 items-center" onClick={(e) => e.stopPropagation()}>
+          {labelProps.map((lp) => {
+            const opts = normalizeOptions(lp.config);
+            const selected = normalizeMultiValue(cellByPropertyId.get(lp.id));
+            return (
+              <div key={lp.id} className="flex flex-wrap gap-1 items-center">
+                {selected.map((val) => {
+                  const opt = opts.find((o) => o.value === val);
+                  const color = opt?.color ?? "#8590a2";
+                  return (
+                    <span
+                      key={val}
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      style={{ backgroundColor: color, color: getContrastText(color) }}
+                    >
+                      {val}
+                    </span>
+                  );
+                })}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      title={`Añadir ${lp.name}`}
+                      className="h-5 w-5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground/60 flex items-center justify-center hover:bg-muted hover:text-foreground shrink-0"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" align="start">
+                    <LabelPicker
+                      options={opts}
+                      selected={selected}
+                      onToggle={(val) => {
+                        const next = selected.includes(val)
+                          ? selected.filter((v) => v !== val)
+                          : [...selected, val];
+                        onUpdateCell(row.id, lp.id, next);
+                      }}
+                      onCreate={(name, color) => {
+                        onAddOption(lp.id, { id: crypto.randomUUID(), value: name, color });
+                        onUpdateCell(row.id, lp.id, [...selected, name]);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Description preview */}
       {description && <DescriptionPreview text={description} />}
@@ -600,7 +729,7 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col gap-2 p-2 flex-1 min-h-25 transition-colors ${isOver ? "bg-muted/50" : ""}`}
+      className={`flex flex-col gap-2 p-2 flex-1 min-h-25 overflow-y-auto transition-colors ${isOver ? "bg-muted/50" : ""}`}
     >
       {children}
     </div>
@@ -615,6 +744,7 @@ export default function KanbanBoard({
   onUpdateCell,
   onDeleteRow,
   onReorderRows,
+  onAddOption,
   isCreating,
 }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -659,6 +789,8 @@ export default function KanbanBoard({
   const badgeProps = properties.filter(
     (p) => p.type === "SELECT" && p.id !== groupByProperty.id
   );
+
+  const labelProps = properties.filter((p) => p.type === "MULTI_SELECT");
 
   const dateProps = properties.filter((p) => p.type === "DATE");
 
@@ -786,7 +918,7 @@ export default function KanbanBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-11.5rem)] min-h-100">
           {columns.map((col) => {
             const colRows = groupedRows[col] ?? [];
             const isUncategorized = col === "__uncategorized__";
@@ -796,10 +928,10 @@ export default function KanbanBoard({
             return (
               <div
                 key={col}
-                className="flex flex-col min-w-70 max-w-[320px] shrink-0 rounded-lg bg-muted/30 border"
+                className="flex flex-col h-full min-w-70 max-w-[320px] shrink-0 rounded-lg bg-muted/30 border"
               >
                 {/* Column header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b">
+                <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
                   <div className="flex items-center gap-2">
                     {!isUncategorized && (
                       <span
@@ -827,6 +959,7 @@ export default function KanbanBoard({
                         titleProp={titleProp}
                         descriptionProp={descriptionProp}
                         badgeProps={badgeProps}
+                        labelProps={labelProps}
                         dateProps={dateProps}
                         numberProps={numberProps}
                         groupByProperty={groupByProperty}
@@ -834,13 +967,14 @@ export default function KanbanBoard({
                         onUpdateCell={onUpdateCell}
                         onDeleteRow={onDeleteRow}
                         onOpenDetail={handleOpenDetail}
+                        onAddOption={onAddOption}
                       />
                     ))}
                   </SortableContext>
                 </DroppableColumn>
 
                 {/* Add card button */}
-                <div className="p-2 border-t">
+                <div className="p-2 border-t shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -896,6 +1030,7 @@ export default function KanbanBoard({
           }}
           onUpdateCell={onUpdateCell}
           onDeleteRow={onDeleteRow}
+          onAddOption={onAddOption}
         />
       )}
     </>

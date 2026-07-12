@@ -52,4 +52,10 @@ export function nextLabelColor(usedCount: number): string {
   return LABEL_COLORS[usedCount % LABEL_COLORS.length].hex;
 }
 
+// Cell value for a MULTI_SELECT property: an array of option `value`s.
+export function normalizeMultiValue(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string");
+}
+
 export { FALLBACK_COLOR };

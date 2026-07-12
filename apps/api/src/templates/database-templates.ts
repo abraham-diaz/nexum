@@ -6,7 +6,7 @@ export interface DatabaseTemplate {
   defaultViewType: 'TABLE' | 'BOARD';
   properties: {
     name: string;
-    type: 'TEXT' | 'NUMBER' | 'SELECT' | 'DATE' | 'RELATION';
+    type: 'TEXT' | 'NUMBER' | 'SELECT' | 'MULTI_SELECT' | 'DATE' | 'RELATION';
     order: number;
     config?: unknown;
   }[];
@@ -46,8 +46,20 @@ export const DATABASE_TEMPLATES: DatabaseTemplate[] = [
           ],
         },
       },
-      { name: 'Fecha inicio', type: 'DATE', order: 4 },
-      { name: 'Fecha fin', type: 'DATE', order: 5 },
+      {
+        name: 'Etiquetas',
+        type: 'MULTI_SELECT',
+        order: 4,
+        config: {
+          options: [
+            { id: 'urgente', value: 'Urgente', color: '#f87462' },
+            { id: 'bug', value: 'Bug', color: '#faa53d' },
+            { id: 'mejora', value: 'Mejora', color: '#579dff' },
+          ],
+        },
+      },
+      { name: 'Fecha inicio', type: 'DATE', order: 5 },
+      { name: 'Fecha fin', type: 'DATE', order: 6 },
     ],
   },
 ];

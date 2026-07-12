@@ -142,7 +142,7 @@ export interface DatabaseTemplate {
 export interface Property {
   id: string;
   name: string;
-  type: "TEXT" | "NUMBER" | "SELECT" | "DATE" | "RELATION";
+  type: "TEXT" | "NUMBER" | "SELECT" | "MULTI_SELECT" | "DATE" | "RELATION";
   order: number;
   config: unknown;
   databaseId: string;

@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { type ErrorRequestHandler } from 'express';
+import 'express-async-errors';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'node:path';
@@ -47,6 +48,21 @@ if (existsSync(webDistPath)) {
     res.sendFile(webIndexPath);
   });
 }
+
+// Catch-all error handler: a route/service error should return 500,
+// not crash the process (Express 4 doesn't do this automatically).
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error(err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'Internal server error' });
+};
+app.use(errorHandler);
+
+// Last line of defense: log instead of letting an unhandled rejection
+// take down the whole server (and every other in-flight request with it).
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandledRejection]', err);
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

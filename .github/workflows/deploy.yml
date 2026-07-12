@@ -19,4 +19,6 @@ jobs:
           script: |
             cd /opt/nexum
             git pull origin main
-            docker-compose up --build -d
+            docker-compose build app
+            docker-compose run --rm app sh -c "cd packages/shared && npx prisma db push"
+            docker-compose up -d

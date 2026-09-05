@@ -16,7 +16,9 @@ export function useDocument(id: string) {
     queryKey: ["documents", id],
     queryFn: () => api.getDocument(id),
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 3_000,
+    refetchInterval: 3_000,
+    refetchOnWindowFocus: true,
   });
 }
 

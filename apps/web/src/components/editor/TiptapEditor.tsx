@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -120,6 +120,17 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(function 
       },
     },
   });
+
+  // Applies updates that arrive from other sessions (polling) without
+  // disturbing an in-progress edit or re-triggering a save.
+  useEffect(() => {
+    if (!editor || editor.isFocused) return;
+    const incoming = JSON.stringify(content);
+    const current = JSON.stringify(editor.getJSON());
+    if (incoming !== current) {
+      editor.commands.setContent(content as any, { emitUpdate: false });
+    }
+  }, [content, editor]);
 
   useImperativeHandle(
     ref,
